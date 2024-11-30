@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutterpro/Screens/InstructorPanel/Settings_Screen.dart';
+import 'InstructorProfile_screen.dart';
 
 class InstructorDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Instructor Dashboard"),
-        actions: [
-          IconButton(icon: Icon(Icons.settings), onPressed: () {}),
-          IconButton(icon: Icon(Icons.account_circle), onPressed: () {}),
+        title: Text("Dashboard"),
+          actions: [
+      IconButton(icon: Icon(Icons.settings), onPressed: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context)=>SettingsScreen()));
+      }),
+    IconButton(icon: Icon(Icons.account_circle), onPressed: () {
+    Navigator.push(context, MaterialPageRoute(builder: (context)=>InstructorProfilePage()));
+    },
+          ),
         ],
       ),
+
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -84,25 +92,57 @@ class InstructorDashboardScreen extends StatelessWidget {
   }
 
   // Helper Widget to build summary cards
-  Widget _buildSummaryCard(String title, String value) {
+
+  Widget _buildSummaryCard(String title, String value, {Color? color}) {
     return Card(
-      elevation: 4,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Container(
-        width: 100,
+        width: 110,
         padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              color ?? Colors.blueAccent, // Default color if not passed
+              color?.withOpacity(0.6) ?? Colors.lightBlueAccent
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 6,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
             SizedBox(height: 8),
-            Text(title, style: TextStyle(fontSize: 16, color: Colors.grey)),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white.withOpacity(0.8),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+
 
   // Helper Widget to build recent activity tile
   Widget _buildRecentActivityTile(String activity) {

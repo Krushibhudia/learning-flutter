@@ -41,6 +41,7 @@ dependencies:
   firebase_auth: ^5.3.3
   cloud_firestore: ^5.5.0
   fl_chart: ^0.63.0
+  table_calendar: ^3.1.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

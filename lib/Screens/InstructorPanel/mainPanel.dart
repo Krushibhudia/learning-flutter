@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutterpro/Screens/InstructorPanel/CreateEditCourse_screen.dart';
 import 'package:flutterpro/Screens/InstructorPanel/InstructorDashBoard_Screen.dart';
 import 'package:flutterpro/Screens/InstructorPanel/Settings_Screen.dart';
 
 import 'Analytics_screen.dart';
+import 'CourseManagement_Screen.dart';
+import 'Webinar_screen.dart';
 
 class mainPanel extends StatefulWidget {
   const mainPanel({super.key});
@@ -18,7 +19,9 @@ class _mainPanelState extends State<mainPanel> {
   final List<Widget> _pages = [
     InstructorDashboardScreen(),
     AnalyticsReportsPage(),
-    SettingsScreen()
+    CourseManagementScreen(),
+    SettingsScreen(),
+    LiveSessionManagementScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -42,9 +45,19 @@ class _mainPanelState extends State<mainPanel> {
             label: 'Analytics',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.add_circle),
+            label: 'Course Manage',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.settings),
             label: 'Settings',
           ),
+             BottomNavigationBarItem(
+            icon: Icon(Icons.video_camera_front_outlined),
+            label: 'Webinar',
+          ),
+
+
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

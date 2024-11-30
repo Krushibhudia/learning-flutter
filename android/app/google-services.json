@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "541671347367",
+    "project_id": "elearn-ec9ec",
+    "storage_bucket": "elearn-ec9ec.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:541671347367:android:dd3c8383c3a196c9d6b782",
+        "android_client_info": {
+          "package_name": "com.example.flutterpro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgoQeOPw27VALdSUnwVoFYh0lqej8_ZEo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

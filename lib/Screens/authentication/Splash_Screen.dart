@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> {
             .get();
 
         bool isLoggedIn = sessionDoc.exists &&
-            (sessionDoc.data() as Map<String, dynamic>?)?['isLoggedIn'] ?? false;
+            (sessionDoc.data() as Map<String, dynamic>?)?['isLoggedIn'];
 
         if (isLoggedIn) {
           // Navigate based on role
@@ -107,20 +107,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 Constants.logo, // Update with your logo path
                 height: 180,
               ),
-              const SizedBox(height: 20),
-              // Loading Indicator
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-              const SizedBox(height: 10),
-              // Loading Text
-              const Text(
-                'Loading...',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white,
-                ),
-              ),
+
             ],
           ),
         ),

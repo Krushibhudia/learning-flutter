@@ -1,20 +1,78 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutterpro/FirebaseServices/FirestoreManager.dart';
+import 'package:flutterpro/Screens/authentication/InstructorEditProfile_Screen.dart';
 
+import '../../Custom_Widgets/GradientButton.dart';
 import 'Earning&Payment_Screen.dart';
 
-class InstructorProfilePage extends StatelessWidget {
+class InstructorProfilePage extends StatefulWidget {
+  @override
+  _InstructorProfilePageState createState() => _InstructorProfilePageState();
+}
+
+class _InstructorProfilePageState extends State<InstructorProfilePage> {
+  String fullName = '';
+  String email = '';
+  String expertise = '';
+  String about = '';
+  String profileImageUrl = 'https://via.placeholder.com/150'; // Default image URL
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _fetchUserData();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+  Future<void> _fetchUserData() async {
+    try {
+      String? uid = _auth.currentUser?.uid;
+      if (uid != null) {
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(uid).get();
+        if (userDoc.exists) {
+          setState(() {
+            fullName = userDoc['fullName'] ?? 'John Doe';
+            email = userDoc['email'] ?? 'john@gmail.com';
+            expertise = userDoc['expertise'] ?? 'Expert in Technology & Design';
+            about = userDoc['about'] ?? 'No bio available.';
+            profileImageUrl = userDoc['profileImage'] ?? profileImageUrl;
+          });
+        } else {
+          print("User document does not exist!");
+        }
+      } else {
+        print("User is not logged in!");
+      }
+    } catch (e) {
+      print("Error fetching user data: $e");
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Instructor Profile'),
         actions: [
-          IconButton(onPressed: (){
-            Navigator.push(context, MaterialPageRoute(builder: (context)=>EarningsAndPaymentScreen()));
-          }, icon: Icon(Icons.attach_money_sharp))
+          IconButton(
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => EarningsAndPaymentScreen()));
+            },
+            icon: const Icon(Icons.attach_money_sharp),
+          )
         ],
       ),
-      body: SingleChildScrollView(
+      body:RefreshIndicator(
+    onRefresh: _fetchUserData,
+          child:  SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -32,23 +90,21 @@ class InstructorProfilePage extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 60,
-                    backgroundImage: NetworkImage(
-                      'https://via.placeholder.com/150', // Replace with profile image URL
-                    ),
+                    backgroundImage: NetworkImage(profileImageUrl), // Display profile image from Firestore
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    'John Doe',
-                    style: TextStyle(
+                  Text(
+                    fullName,
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Expert in Technology & Design',
-                    style: TextStyle(
+                  Text(
+                    expertise,
+                    style: const TextStyle(
                       fontSize: 16,
                       color: Colors.white70,
                     ),
@@ -56,10 +112,10 @@ class InstructorProfilePage extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.green),
-                      const SizedBox(width: 5),
-                      const Text(
+                    children: const [
+                      Icon(Icons.check_circle, color: Colors.greenAccent),
+                      SizedBox(width: 5),
+                      Text(
                         'Verified Instructor',
                         style: TextStyle(color: Colors.white),
                       ),
@@ -83,28 +139,32 @@ class InstructorProfilePage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Text(
-                    'John Doe is a seasoned instructor with 5+ years of experience teaching technology and design courses. Passionate about making complex topics easy to understand.',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  Text(
+                    about,
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
               ),
             ),
 
-            // Stats Section
+
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatItem('12', 'Courses'),
-                  _buildStatItem('5000+', 'Students'),
-                  _buildStatItem('4.8', 'Rating'),
-                ],
+              child: GradientButton(
+                buttonText: 'Edit Profile',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => InstructorEditProfileScreen()),
+                  ).then((_){
+                    _fetchUserData();
+                  });
+                },
+                gradientColors: [Colors.blue, Colors.blueAccent],
               ),
             ),
-
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // Courses Section
             Padding(
@@ -118,45 +178,26 @@ class InstructorProfilePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            SizedBox(
-              height: 200, // Adjust height as needed
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: 5, // Replace with dynamic data
-                itemBuilder: (context, index) {
-                  return _buildCourseCard();
-                },
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: SizedBox(
+                height: 210, // Adjust height as needed
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: 5, // Replace with dynamic data
+                  itemBuilder: (context, index) {
+                    return _buildCourseCard();
+                  },
+                ),
               ),
             ),
-
-
+            SizedBox(height: 20,)
           ],
         ),
       ),
-    );
+    ));
   }
 
-  // Stats Widget
-  Widget _buildStatItem(String count, String label) {
-    return Column(
-      children: [
-        Text(
-          count,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.grey,
-          ),
-        ),
-      ],
-    );
-  }
 
   // Course Card Widget
   Widget _buildCourseCard() {

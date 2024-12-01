@@ -10,6 +10,8 @@ class CustomTextField extends StatelessWidget {
   final VoidCallback? toggleVisibility;
   final TextEditingController? controller; // Add the controller parameter
   final int? maxLines;
+  final bool enabled;
+
   const CustomTextField({
     super.key,
     required this.hintText,
@@ -21,6 +23,7 @@ class CustomTextField extends StatelessWidget {
     this.toggleVisibility,
     this.controller,
     this.maxLines,
+    this.enabled = true,
   });
 
   @override
@@ -32,6 +35,7 @@ class CustomTextField extends StatelessWidget {
       onSaved: onSaved,
       validator: validator,
       maxLines: maxLines,
+      enabled: enabled,
       decoration: InputDecoration(
         hintText: hintText,
         filled: true,

@@ -1,4 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import '../authentication/Login_Screen.dart';
+import 'GenerateStudentCerticate_Screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -6,6 +11,112 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  Future<void> _handleLogout(BuildContext context) async {
+    bool? confirmLogout = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Logout"),
+          content: const Text("Are you sure you want to log out?"),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context)
+                    .pop(false); // Dismiss dialog with no action
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context)
+                    .pop(true); // Dismiss dialog and confirm logout
+              },
+              child: const Text("Logout"),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmLogout == true) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await FirebaseFirestore.instance
+              .collection('sessions')
+              .doc(user.uid)
+              .update({'isLoggedIn': false});
+        }
+        await FirebaseAuth.instance.signOut();
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Logged out successfully')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error logging out: ${e.toString()}')),
+        );
+      }
+    }
+  }
+  Future<void> _handleDeleteAccount(BuildContext context) async {
+    bool? confirmDelete = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Delete Account"),
+          content: const Text("Are you sure you want to delete your account? This action is irreversible."),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop(true);
+                try {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(user.uid)
+                        .delete();
+
+                    await FirebaseFirestore.instance
+                        .collection('sessions')
+                        .doc(user.uid)
+                        .delete();
+
+                    await user.delete();
+
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    );
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Account deleted successfully')),
+                    );
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting account: ${e.toString()}')),
+                  );
+                }
+              },
+              child: const Text("Delete"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // Boolean values to manage the switch states
   bool receiveEmailNotifications = true;
   bool receivePushNotifications = false;
@@ -17,6 +128,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
+        actions: [
+          IconButton(onPressed: (){Navigator.push(context, MaterialPageRoute(builder: (context)=>CertificatesScreen()));
+            }, icon: Icon(Icons.celebration_outlined))
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -68,14 +183,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             // Log Out Button
             _buildActionButton('Log Out', Colors.blueAccent, () {
-              // Handle log out logic
+              _handleLogout(context);
             }),
 
             const SizedBox(height: 20),
 
             // Delete Account Button
             _buildActionButton('Delete Account', Colors.blueAccent, () {
-              // Handle delete account logic
+              _handleDeleteAccount(context);
             }),
           ],
         ),

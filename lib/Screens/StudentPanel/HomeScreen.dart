@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'CourseDetail_screen.dart';
 import 'Notification_screen.dart';
@@ -9,22 +11,29 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _HomeScreenState extends State<HomeScreen> {
+  String? userName;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this); // 4 tabs
+    _fetchUserName();
+
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     super.dispose();
   }
-
+  Future<void> _fetchUserName() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      var userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      setState(() {
+        userName = userDoc.data()?['fullName'] ?? 'User'; // Fallback to 'User' if no name
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -48,20 +57,20 @@ class _HomeScreenState extends State<HomeScreen>
               child: AppBar(
                 backgroundColor: Colors.transparent,
                 elevation: 0.0,
-                title: const Padding(
-                  padding: EdgeInsets.only(top: 20.0, left: 5.0),
+                title: Padding(
+                  padding: const EdgeInsets.only(top: 20.0, left: 5.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Hi there,",
-                        style: TextStyle(
+                        userName != null ? "Hi $userName," : "Hi there,",
+                        style: const TextStyle(
                           fontSize: 18.0,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
-                      Text(
+                      const Text(
                         "Welcome back!",
                         style: TextStyle(
                           fontSize: 14.0,
@@ -71,22 +80,6 @@ class _HomeScreenState extends State<HomeScreen>
                     ],
                   ),
                 ),
-                actions: [
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: IconButton(
-                      icon: const Icon(Icons.notifications_active_outlined,
-                          color: Colors.white),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const NotificationScreen()),
-                        );
-                      },
-                    ),
-                  ),
-                ],
               ),
             ),
             // Positioned Search Bar

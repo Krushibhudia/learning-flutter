@@ -1,25 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutterpro/Screens/InstructorPanel/Settings_Screen.dart';
 import 'InstructorProfile_screen.dart';
 
-class InstructorDashboardScreen extends StatelessWidget {
+class InstructorDashboardScreen extends StatefulWidget {
+  @override
+  State<InstructorDashboardScreen> createState() => _InstructorDashboardScreenState();
+}
+
+class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // User's course data
+  List<Map<String, dynamic>> _courses = [];
+  int _totalStudents = 0;
+  double _averageRating = 0.0;
+  int _totalCourses = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchInstructorData();
+  }
+
+  Future<void> _fetchInstructorData() async {
+    try {
+      String userId = _auth.currentUser?.uid ?? '';
+      if (userId.isEmpty) {
+        print('No user is logged in');
+        return;
+      }
+
+      QuerySnapshot courseSnapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('courses')
+          .get();
+
+      // Process the courses data
+      setState(() {
+        _courses = courseSnapshot.docs
+            .map((doc) {
+          // Add the course id to the course data
+          Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
+          courseData['id'] = doc.id; // Add the document id
+          return courseData;
+        })
+            .toList();
+
+        _totalCourses = _courses.length;
+        _totalStudents = _courses.fold(0, (sum, course) => course['studentsCount'] ?? 0);
+        _averageRating = _courses.isNotEmpty
+            ? _courses.fold(0.0, (sum, course) => sum + (course['rating'] ?? 0.0)) / _courses.length
+            : 0.0;
+      });
+    } catch (e) {
+      print("Error fetching instructor data: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Dashboard"),
-          actions: [
-      IconButton(icon: Icon(Icons.settings), onPressed: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context)=>SettingsScreen()));
-      }),
-    IconButton(icon: Icon(Icons.account_circle), onPressed: () {
-    Navigator.push(context, MaterialPageRoute(builder: (context)=>InstructorProfilePage()));
-    },
-          ),
+        actions: [
+
+          IconButton(icon: Icon(Icons.account_circle), onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context)=>InstructorProfilePage()));
+          }),
         ],
       ),
-
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -30,13 +84,13 @@ class InstructorDashboardScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildSummaryCard('Courses', '5'),
-                  _buildSummaryCard('Students', '120'),
-                  _buildSummaryCard('Ratings', '4.7'),
+                  _buildSummaryCard('Courses', _totalCourses.toString(), color: Colors.red),
+                  _buildSummaryCard('Students', _totalStudents.toString(), color: Colors.orange),
+                  _buildSummaryCard('Ratings', _averageRating.toStringAsFixed(1), color: Colors.indigoAccent),
                 ],
               ),
               SizedBox(height: 20),
-        
+
               // Graph Section for Course Completion Rate
               Container(
                 padding: EdgeInsets.all(16),
@@ -77,7 +131,7 @@ class InstructorDashboardScreen extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 20),
-        
+
               // Recent Activity Section
               Text("Recent Activity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
@@ -92,19 +146,22 @@ class InstructorDashboardScreen extends StatelessWidget {
   }
 
   // Helper Widget to build summary cards
-
   Widget _buildSummaryCard(String title, String value, {Color? color}) {
+    final baseColor = color ?? Colors.blueAccent;
+
     return Card(
       elevation: 6,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
       child: Container(
-        width: 110,
-        padding: EdgeInsets.all(16),
+        width: 115, // Adjusted width for better spacing
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              color ?? Colors.blueAccent, // Default color if not passed
-              color?.withOpacity(0.6) ?? Colors.lightBlueAccent
+              baseColor,
+              baseColor.withOpacity(0.6),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -112,9 +169,9 @@ class InstructorDashboardScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26,
+              color: baseColor.withOpacity(0.4), // Shadow matches the gradient
               blurRadius: 6,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -123,13 +180,13 @@ class InstructorDashboardScreen extends StatelessWidget {
           children: [
             Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               title,
               style: TextStyle(
@@ -142,7 +199,6 @@ class InstructorDashboardScreen extends StatelessWidget {
       ),
     );
   }
-
 
   // Helper Widget to build recent activity tile
   Widget _buildRecentActivityTile(String activity) {

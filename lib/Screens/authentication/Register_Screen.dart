@@ -22,7 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final FirebaseAuthService _authService = FirebaseAuthService();
-  final FirestoreService _firestoreService = FirestoreService();
+  final FirestoreManager _firestoreService = FirestoreManager();
 
   bool _isPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;

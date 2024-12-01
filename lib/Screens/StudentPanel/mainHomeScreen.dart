@@ -14,8 +14,8 @@ class _MainhomescreenState extends State<Mainhomescreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    const HomeScreen(),
-    const BookmarkedScreen(),
+     HomeScreen(),
+    BookmarkedScreen(),
     const ProfileScreen(),
   ];
 

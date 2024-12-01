@@ -1,69 +1,245 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class BookmarkScreen extends StatefulWidget {
-  final List<String> bookmarkedCourses;  // Pass the bookmarked course IDs
+import 'CourseDetail_screen.dart';
 
-  BookmarkScreen({required this.bookmarkedCourses});
+class BookmarkedScreen extends StatefulWidget {
+  const BookmarkedScreen({Key? key}) : super(key: key);
 
   @override
-  _BookmarkScreenState createState() => _BookmarkScreenState();
+  _BookmarkedScreenState createState() => _BookmarkedScreenState();
 }
 
-class _BookmarkScreenState extends State<BookmarkScreen> {
-  late Future<List<Map<String, dynamic>>> _bookmarkedCoursesFuture;
+class _BookmarkedScreenState extends State<BookmarkedScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  List<DocumentSnapshot> bookmarkedCourses = [];
+  List<DocumentSnapshot> filteredBookmarkedCourses = [];
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _bookmarkedCoursesFuture = fetchBookmarkedCourses(widget.bookmarkedCourses);
+    fetchBookmarkedCourses();
+    _searchController.addListener(_filterCourses);
   }
 
-  Future<List<Map<String, dynamic>>> fetchBookmarkedCourses(List<String> bookmarkedCourses) async {
-    if (bookmarkedCourses.isEmpty) return [];
+  @override
+  void dispose() {
+    _searchController.removeListener(_filterCourses);
+    _searchController.dispose();
+    super.dispose();
+  }
 
-    // Fetch course details for the bookmarked courses
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('courses')
-        .where(FieldPath.documentId, whereIn: bookmarkedCourses)
-        .get();
+  Future<void> fetchBookmarkedCourses() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        final bookmarkedIds = List<String>.from(userDoc.data()?['bookmarkedCourses'] ?? []);
 
-    return querySnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+        if (bookmarkedIds.isNotEmpty) {
+          final querySnapshot = await FirebaseFirestore.instance
+              .collection('blogs')
+              .where(FieldPath.documentId, whereIn: bookmarkedIds)
+              .get();
+          setState(() {
+            bookmarkedCourses = querySnapshot.docs;
+            filteredBookmarkedCourses = bookmarkedCourses;
+            isLoading = false;
+          });
+        }
+      }
+    }
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  void _filterCourses() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      filteredBookmarkedCourses = bookmarkedCourses
+          .where((course) => course['title'].toString().toLowerCase().contains(query))
+          .toList();
+    });
+  }
+
+  void _toggleBookmark(String courseId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+      // Fetch user document
+      final userDoc = await userRef.get();
+      final bookmarkedIds = List<String>.from(userDoc.data()?['bookmarkedCourses'] ?? []);
+
+      if (bookmarkedIds.contains(courseId)) {
+        bookmarkedIds.remove(courseId);
+      } else {
+        bookmarkedIds.add(courseId);
+      }
+
+      // Update Firestore
+      await userRef.update({'bookmarkedCourses': bookmarkedIds});
+
+      // Refresh UI
+      fetchBookmarkedCourses();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Bookmarked Courses"),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(150.0),
+        child: Stack(
+          children: [
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue, Colors.blueAccent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30.0),
+                  bottomRight: Radius.circular(30.0),
+                ),
+              ),
+              child: AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0.0,
+                title: const Padding(
+                  padding: EdgeInsets.only(top: 20.0, left: 5.0),
+                  child: Text(
+                    "Your Bookmarks",
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 20.0,
+              right: 20.0,
+              bottom: 15.0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Search bookmarked courses',
+                    border: InputBorder.none,
+                    icon: Icon(Icons.search, color: Colors.blueAccent),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _bookmarkedCoursesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text("Error loading bookmarks"));
-          } else if (snapshot.data == null || snapshot.data!.isEmpty) {
-            return Center(child: Text("No bookmarked courses"));
-          }
-
-          final bookmarkedCourses = snapshot.data!;
-          return ListView.builder(
-            itemCount: bookmarkedCourses.length,
-            itemBuilder: (context, index) {
-              final course = bookmarkedCourses[index];
-              return ListTile(
-                leading: course['image'] != null
-                    ? Image.network(course['image'], width: 50, height: 50)
-                    : Icon(Icons.book),
-                title: Text(course['title'] ?? 'Untitled Course'),
-                subtitle: Text(course['description'] ?? 'No description available'),
-              );
-            },
-          );
-        },
-      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: filteredBookmarkedCourses.isEmpty
+                  ? const Center(
+                      child: Text(
+                        "No bookmarked courses available",
+                        style: TextStyle(fontSize: 18.0, color: Colors.grey),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: filteredBookmarkedCourses.length,
+                      itemBuilder: (context, index) {
+                        final course = filteredBookmarkedCourses[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CourseDetailScreen(
+                                  courseTitle: course['title'],
+                                  courseImage: course['image'] ?? '',
+                                  courseDescription:
+                                      'Detailed description of ${course['title']}.',
+                                  courseProgress: 0.7,
+                                  lectures: const [],
+                                  quizzes: const [],
+                                ),
+                              ),
+                            );
+                          },
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(vertical: 5.0),
+                            child: Padding(
+                              padding: const EdgeInsets.all(10.0),
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8.0),
+                                    child: Image.network(
+                                      course['image'] ?? '',
+                                      height: 60.0,
+                                      width: 80.0,
+                                      fit: BoxFit.fill,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10.0),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          course['title'],
+                                          style: const TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4.0),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.star,
+                                                color: Colors.orange, size: 16.0),
+                                            const SizedBox(width: 4.0),
+                                            Text(
+                                              "${course['rating'] ?? 0} Rating",
+                                              style: TextStyle(
+                                                fontSize: 14.0,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.bookmark_remove,
+                                      color: Colors.redAccent,
+                                    ),
+                                    onPressed: () => _toggleBookmark(course.id),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
     );
   }
 }

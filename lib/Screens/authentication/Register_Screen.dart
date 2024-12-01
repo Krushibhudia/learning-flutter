@@ -46,10 +46,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           await _firestoreService.addUserToFirestore(user.uid, {
             'fullName': fullName,
             'email': email,
+            
             'uid': user.uid,
             'role': _selectedRole,
             'createdAt': DateTime.now().toIso8601String(),
-          });
+});
 
           // Navigate to login or home screen
           ScaffoldMessenger.of(context).showSnackBar(

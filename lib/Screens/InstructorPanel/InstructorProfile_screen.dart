@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutterpro/FirebaseServices/FirestoreManager.dart';
 import 'package:flutterpro/Screens/authentication/InstructorEditProfile_Screen.dart';
 
 import '../../Custom_Widgets/GradientButton.dart';

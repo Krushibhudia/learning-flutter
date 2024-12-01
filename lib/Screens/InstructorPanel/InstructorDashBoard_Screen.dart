@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutterpro/Screens/InstructorPanel/Settings_Screen.dart';
 import 'InstructorProfile_screen.dart';
 
 class InstructorDashboardScreen extends StatefulWidget {

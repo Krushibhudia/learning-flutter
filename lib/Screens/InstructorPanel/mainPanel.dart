@@ -4,7 +4,6 @@ import 'package:flutterpro/Screens/InstructorPanel/Settings_Screen.dart';
 
 import 'Analytics_screen.dart';
 import 'CourseManage/CourseManagement_Screen.dart';
-import 'InstructorProfile_screen.dart';
 import 'Webinar_screen.dart';
 
 class mainPanel extends StatefulWidget {

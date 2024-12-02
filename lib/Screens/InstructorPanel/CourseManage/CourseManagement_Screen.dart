@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutterpro/Constants/Constants+Images.dart';
+import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 import '../../../Custom_Widgets/CustomTextField.dart';
@@ -25,11 +29,12 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
   bool _isCoursePublished = false;
   String _courseFormat = 'Video';
   String? _selectedCategory;
-  File? _courseImage;
+  File? image;
 
-  // Firestore instance
+  // Firestore and Firebase Storage instances
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   // Category options
   final List<String> _categories = ['Design', 'Technology', 'Business', 'Art'];
@@ -41,6 +46,23 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
     _coursePriceController.dispose();
     _courseCategoryController.dispose();
     super.dispose();
+  }
+
+  Future pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await ImagePicker().pickImage(source: source);
+      if (pickedFile == null) return;
+
+      final File imageTemporary = File(pickedFile.path);
+      setState(() {
+        image = imageTemporary;
+      });
+    } on PlatformException catch (e) {
+      print("Failed to pick image: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick image: $e')),
+      );
+    }
   }
 
 
@@ -57,7 +79,16 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
       return;
     }
 
-    // Prepare course data
+    String? imageUrl;
+    if (image == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please select an image')),
+      );
+      return;
+    }
+
+
+
     Map<String, dynamic> courseData = {
       'title': _courseTitleController.text,
       'description': _courseDescriptionController.text,
@@ -65,11 +96,11 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
       'category': _selectedCategory,
       'format': _courseFormat,
       'isPublished': _isCoursePublished,
-      'instructorId': user.uid, // Store the user's UID for reference
+      'instructorId': user.uid,
       'createdAt': Timestamp.now(),
-      // Optionally, store the image URL if uploaded
-      'image': _courseImage != null ? _courseImage!.path : null,
+      'image': imageUrl,
     };
+
 
     try {
       // Generate a custom ID for the course
@@ -91,6 +122,58 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
         SnackBar(content: Text('Error saving course: $e')),
       );
     }
+  }
+
+  void _showBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Select Image Source',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      pickImage(ImageSource.camera);
+                    },
+                    icon: const Icon(Icons.camera_alt),
+                    label: const Text('Camera'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      pickImage(ImageSource.gallery);
+                    },
+                    icon: const Icon(Icons.photo),
+                    label: const Text('Gallery'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -196,80 +279,49 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
                 ),
               ),
               SizedBox(height: 20),
-
-              // Image Picker Button
+              image != null
+                  ? Image.file(
+                image!,
+                width: 350,
+                height: 160,
+                fit: BoxFit.fill,
+              )
+                  : Image.asset(
+                Constants.logo,
+                width: 350,
+                height: 160,
+                fit: BoxFit.fill,
+              ),
+              SizedBox(height: 10),
               ElevatedButton(
-                onPressed: (){},
-                child: Text('Pick Course Image'),
-              ),
-
-              SizedBox(height: 20),
-
-              // Add/Edit Lessons Button
-              GradientButton(
-                buttonText: 'Add/Edit Lessons',
-                onPressed: () {
-                  // Navigate to lesson management screen
-                },
-                gradientColors: [Colors.blue, Colors.blueAccent],
+                onPressed: () => _showBottomSheet(context),
+                child: Text('Pick an Image'),
               ),
               SizedBox(height: 20),
 
-              // Manage Media Button
-              GradientButton(
-                buttonText: 'Manage Media (Videos, PDFs)',
-                onPressed: () {
-                  // Open media management screen
-                },
-                gradientColors: [Colors.blue, Colors.blueAccent],
+              // Checkbox for Publish Status
+              Row(
+                children: [
+                  Checkbox(
+                    value: _isCoursePublished,
+                    onChanged: (value) {
+                      setState(() {
+                        _isCoursePublished = value!;
+                      });
+                    },
+                  ),
+                  Text('Publish Course'),
+                ],
               ),
               SizedBox(height: 20),
 
-              // Publish/Unpublish Course
-              SwitchListTile(
-                title: Text('Publish Course'),
-                value: _isCoursePublished,
-                onChanged: (bool value) {
-                  setState(() {
-                    _isCoursePublished = value;
-                  });
-                },
-                activeColor: Colors.blue,
-              ),
-              SizedBox(height: 20),
-
-              // Course Preview Button
+              // Gradient Save Button
               GradientButton(
-                buttonText: 'Preview Course',
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CoursePreviewScreen(
-                        title: _courseTitleController.text,
-                        description: _courseDescriptionController.text,
-                        price: _coursePriceController.text,
-                        category: _courseCategoryController.text,
-                        format: _courseFormat,
-                        lessons: [
-                          {'title': 'Introduction to Flutter', 'duration': '10 mins'},
-                          {'title': 'State Management Basics', 'duration': '20 mins'},
-                        ],
-                      ),
-                    ),
-                  );
+                onPressed: (){
+                  saveCourse();
                 },
-                gradientColors: [Colors.blue, Colors.blueAccent],
-              ),
-              SizedBox(height: 40),
 
-              // Save Course Button
-              GradientButton(
-                buttonText: 'Save Course',
-                onPressed: () {
-                  saveCourse();  // Call the function to save the course
-                },
-                gradientColors: [Colors.orange, Colors.red],
+              buttonText: 'Save Course', gradientColors: [Colors.blue,Colors.blue],
               ),
             ],
           ),

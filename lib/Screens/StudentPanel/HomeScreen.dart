@@ -1,6 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'CourseDetail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,14 +14,12 @@ class _HomeScreenState extends State<HomeScreen> {
   String? userName;
   String searchQuery = "";
   final TextEditingController searchController = TextEditingController();
-  final Set<String> bookmarkedCourses = {}; // Tracks bookmarked course IDs
+  Set<String> bookmarkedCourses = {}; // Tracks bookmarked course IDs
 
   @override
   void initState() {
     super.initState();
     _fetchUserName();
-
-    // Listen to search query changes
     searchController.addListener(() {
       setState(() {
         searchQuery = searchController.text.toLowerCase().trim();
@@ -35,8 +33,9 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // Fetch the username and bookmarked courses from Firestore
   Future<void> _fetchUserName() async {
-    User? user = FirebaseAuth.instance.currentUser;
+    final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       var userDoc = await FirebaseFirestore.instance
           .collection('users')
@@ -44,35 +43,34 @@ class _HomeScreenState extends State<HomeScreen> {
           .get();
       setState(() {
         userName = userDoc.data()?['fullName'] ?? 'User';
+        bookmarkedCourses = Set<String>.from(userDoc.data()?['bookmarkedCourses'] ?? []);
       });
     }
   }
 
- void _toggleBookmark(String courseId) async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user != null) {
-    final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-    
-    // Fetch current bookmarks from Firestore
-    final userDoc = await userRef.get();
-    List<String> bookmarkedCourses = List<String>.from(userDoc.data()?['bookmarkedCourses'] ?? []);
-    
-    // Toggle the bookmark status
-    setState(() {
-      if (bookmarkedCourses.contains(courseId)) {
-        bookmarkedCourses.remove(courseId); // Remove bookmark
-      } else {
-        bookmarkedCourses.add(courseId); // Add bookmark
-      }
-    });
-    
-    // Update the Firestore database with the new list of bookmarked courses
-    await userRef.update({
-      'bookmarkedCourses': bookmarkedCourses,
-    });
-  }
-}
+  // Toggle bookmark for a course
+  Future<void> _toggleBookmark(String courseId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      List<String> currentBookmarks = List<String>.from(bookmarkedCourses);
 
+      if (currentBookmarks.contains(courseId)) {
+        currentBookmarks.remove(courseId); // Unbookmark
+      } else {
+        currentBookmarks.add(courseId); // Bookmark
+      }
+
+      // Update Firestore with the new bookmark list
+      await userRef.update({
+        'bookmarkedCourses': currentBookmarks,
+      });
+
+      setState(() {
+        bookmarkedCourses = Set<String>.from(currentBookmarks); // Update local state
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -198,11 +196,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final courseDescription = course['description'] ?? 'No Description available';
     final courseCategory = course['category'] ?? 'Uncategorized';
     final coursePrice = course['price'] ?? '0';
+    final courseImage = course['image'] ?? ''; // Fetch the image URL
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 5.0),
       child: ListTile(
-        leading: const Icon(Icons.book, size: 50, color: Colors.grey), // Remove image handling
+        leading: courseImage.isNotEmpty
+            ? Image.network(courseImage, width: 50, height: 50, fit: BoxFit.cover) // Display image if available
+            : const Icon(Icons.book, size: 50, color: Colors.grey), // Fallback icon if no image
         title: Text(courseTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context) => CourseDetailScreen(
                 courseTitle: courseTitle,
                 courseDescription: courseDescription,
-                courseImage: '', // Placeholder as image is removed
+                courseImage: courseImage,
                 quizzes: const [],
                 lectures: const [],
               ),

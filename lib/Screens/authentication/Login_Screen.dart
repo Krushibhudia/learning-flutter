@@ -7,11 +7,9 @@ import 'package:flutterpro/Screens/authentication/ForgotPassword_screen.dart';
 import 'package:flutterpro/Screens/authentication/Register_Screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterpro/Utils/Validations.dart';
-import '../../Custom_Widgets/CustomTextField.dart'; // Reusable TextField
+import '../../Custom_Widgets/CustomTextField.dart';
 import '../../Custom_Widgets/GradientButton.dart';
-import '../InstructorPanel/InstructorDashBoard_Screen.dart';
-import '../StudentPanel/mainHomeScreen.dart'; // Reusable Gradient Button
-//import 'package:shared_preferences/shared_preferences.dart';
+import '../StudentPanel/mainHomeScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

@@ -90,13 +90,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(false); // Cancel action
+                Navigator.of(context).pop(false);
               },
               child: const Text("Cancel"),
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(context).pop(true); // Proceed to delete account
+                Navigator.of(context).pop(true);
                 try {
                   final user = FirebaseAuth.instance.currentUser;
                   if (user != null) {
@@ -234,9 +234,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 5),
                 _buildListTile(Icons.history, 'Course History', () {}),
                 const SizedBox(height: 5),
-                _buildListTile(Icons.star, 'Favorites', () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context)=>BookmarkedScreen()));
-                }),
+                // _buildListTile(Icons.star, 'Favorites', () {
+                //   Navigator.push(context, MaterialPageRoute(builder: (context)=>
+                //       BookmarkScreen(userId:  FirebaseAuth.instance.currentUser?.uid ?? '')));
+                // }),
                 const SizedBox(height: 5),
                 _buildListTile(Icons.info, 'About App', () {}),
                 const SizedBox(height: 5),

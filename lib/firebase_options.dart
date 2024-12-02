@@ -50,19 +50,22 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBgoQeOPw27VALdSUnwVoFYh0lqej8_ZEo',
-    appId: '1:541671347367:android:dd3c8383c3a196c9d6b782',
-    messagingSenderId: '541671347367',
-    projectId: 'elearn-ec9ec',
-    storageBucket: 'elearn-ec9ec.firebasestorage.app',
+    apiKey: 'AIzaSyAfIUHnwNv6RuZDWBNY_nRo3jqBPa5Vn3w',
+    appId: '1:659360301138:android:e4bbaf15deb170775a1f8b',
+    messagingSenderId: '659360301138',
+    projectId: 'storeecomapp',
+    storageBucket: 'storeecomapp.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAOGnxHea6uM1SxcjZivjfrrBYO81MtDwg',
-    appId: '1:541671347367:ios:459331e7d131d54cd6b782',
-    messagingSenderId: '541671347367',
-    projectId: 'elearn-ec9ec',
-    storageBucket: 'elearn-ec9ec.firebasestorage.app',
+    apiKey: 'AIzaSyAOK8d6Tx-qedCpj5mOXfi7T2od7JYB1_w',
+    appId: '1:659360301138:ios:87e9122fe7d0c4795a1f8b',
+    messagingSenderId: '659360301138',
+    projectId: 'storeecomapp',
+    storageBucket: 'storeecomapp.appspot.com',
+    androidClientId: '659360301138-5i22k14sm993ou13go0ltpt6kbm3kjd8.apps.googleusercontent.com',
+    iosClientId: '659360301138-174bd606oubl1ivgvq50hkmbo0mbj39g.apps.googleusercontent.com',
     iosBundleId: 'com.example.flutterpro',
   );
+
 }

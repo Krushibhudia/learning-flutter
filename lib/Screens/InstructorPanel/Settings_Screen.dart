@@ -39,13 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (confirmLogout == true) {
       try {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          await FirebaseFirestore.instance
-              .collection('sessions')
-              .doc(user.uid)
-              .update({'isLoggedIn': false});
-        }
+       
         await FirebaseAuth.instance.signOut();
 
         Navigator.pushReplacement(
@@ -87,11 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         .doc(user.uid)
                         .delete();
 
-                    await FirebaseFirestore.instance
-                        .collection('sessions')
-                        .doc(user.uid)
-                        .delete();
-
+                
                     await user.delete();
 
                     Navigator.pushReplacement(

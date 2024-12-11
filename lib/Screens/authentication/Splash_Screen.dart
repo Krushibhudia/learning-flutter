@@ -7,7 +7,7 @@ import 'package:flutterpro/Screens/authentication/Login_Screen.dart';
 import 'package:flutterpro/main.dart';
 import '../InstructorPanel/InstructorDashBoard_Screen.dart';
 import '../StudentPanel/mainHomeScreen.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -40,15 +40,11 @@ class _SplashScreenState extends State<SplashScreen> {
 
         String role = userData?['role'] ?? 'Student';
 
-        DocumentSnapshot sessionDoc = await FirebaseFirestore.instance
-            .collection('sessions')
-            .doc(user.uid)
-            .get();
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userRole', role);
+        await prefs.setBool('isLoggedIn', true);
 
-        bool isLoggedIn = sessionDoc.exists &&
-            (sessionDoc.data() as Map<String, dynamic>?)?['isLoggedIn'];
 
-        if (isLoggedIn) {
           // Navigate based on role
           if (role == 'Instructor') {
             Navigator.pushReplacement(
@@ -68,13 +64,7 @@ class _SplashScreenState extends State<SplashScreen> {
             MaterialPageRoute(builder: (context) => const LoginScreen()),
           );
         }
-      } else {
-        // Navigate to Login Screen if no user is found
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-      }
+      
     } catch (e) {
       // Handle errors and fallback to Login Screen
       ScaffoldMessenger.of(context).showSnackBar(

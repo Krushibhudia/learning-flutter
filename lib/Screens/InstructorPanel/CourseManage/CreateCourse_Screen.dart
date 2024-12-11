@@ -12,13 +12,13 @@ import '../../../Custom_Widgets/GradientButton.dart';
 import '../ManageCourse_screen.dart';
 import 'PreviewCourse_Screen.dart';
 
-class CourseManagementScreen extends StatefulWidget {
+class CreateCourseScreen extends StatefulWidget {
   @override
-  _CourseManagementScreenState createState() =>
-      _CourseManagementScreenState();
+  _CreateCourseScreenState createState() =>
+      _CreateCourseScreenState();
 }
 
-class _CourseManagementScreenState extends State<CourseManagementScreen> {
+class _CreateCourseScreenState extends State<CreateCourseScreen> {
   final TextEditingController _courseTitleController = TextEditingController();
   final TextEditingController _courseDescriptionController =
   TextEditingController();
@@ -180,7 +180,7 @@ class _CourseManagementScreenState extends State<CourseManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Course Management'),
+        title: Text('Create Course'),
         actions: [
           IconButton(
             onPressed: () {

@@ -5,6 +5,7 @@ import 'package:flutterpro/Screens/StudentPanel/Bookmark_screen.dart';
 import 'package:flutterpro/Screens/StudentPanel/Notification_screen.dart';
 import 'package:flutterpro/Screens/authentication/ChangePassword_Screen.dart';
 import 'package:flutterpro/Screens/authentication/Login_Screen.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
 import '../authentication/EditProfile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -15,6 +16,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isLoggingOut = false;
+
   // Fetch current user data from Firestore
   Future<DocumentSnapshot> _getUserData() async {
     User? currentUser = FirebaseAuth.instance.currentUser;
@@ -27,7 +30,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     throw Exception('User not logged in');
   }
 
+  // Handle logout
   Future<void> _handleLogout(BuildContext context) async {
+    setState(() => _isLoggingOut = true);
+
     bool? confirmLogout = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -37,15 +43,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           actions: <Widget>[
             TextButton(
               onPressed: () {
-                Navigator.of(context)
-                    .pop(false); // Dismiss dialog with no action
+                Navigator.of(context).pop(false); // Dismiss dialog with no action
               },
               child: const Text("Cancel"),
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context)
-                    .pop(true); // Dismiss dialog and confirm logout
+                Navigator.of(context).pop(true); // Dismiss dialog and confirm logout
               },
               child: const Text("Logout"),
             ),
@@ -53,33 +57,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+
     if (confirmLogout == true) {
       try {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
-          await FirebaseFirestore.instance
-              .collection('sessions')
-              .doc(user.uid)
-              .update({'isLoggedIn': false});
+       
+          // Sign out from Firebase Authentication
+          await FirebaseAuth.instance.signOut();
+
+          // Clear SharedPreferences
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.clear(); // Clear all saved preferences
+
+          // Navigate to Login Screen after logout
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Logged out successfully')),
+          );
         }
-        await FirebaseAuth.instance.signOut();
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Logged out successfully')),
-        );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error logging out: ${e.toString()}')),
         );
+      } finally {
+        setState(() => _isLoggingOut = false);
       }
+    } else {
+      setState(() => _isLoggingOut = false);
     }
   }
 
+  // Handle delete account
   Future<void> _handleDeleteAccount(BuildContext context) async {
     bool? confirmDelete = await showDialog<bool>(
       context: context,
@@ -104,12 +119,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         .collection('users')
                         .doc(user.uid)
                         .delete();
-
-                    await FirebaseFirestore.instance
-                        .collection('sessions')
-                        .doc(user.uid)
-                        .delete();
-
                     await user.delete();
 
                     Navigator.pushReplacement(
@@ -134,7 +143,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
-
+  Future<bool> _isUserLoggedIn() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('isLoggedIn') ?? false; // Returns false if not found
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,154 +155,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('Profile'),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: FutureBuilder<DocumentSnapshot>(
-          future: _getUserData(), // Fetch the current user's data
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: FutureBuilder<DocumentSnapshot>(
+              future: _getUserData(), // Fetch the current user's data
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-            if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
 
-            if (!snapshot.hasData || !snapshot.data!.exists) {
-              return const Center(child: Text('User not found.'));
-            }
+                if (!snapshot.hasData || !snapshot.data!.exists) {
+                  return const Center(child: Text('User not found.'));
+                }
 
-            var userData = snapshot.data!.data() as Map<String, dynamic>;
-            String name = userData['fullName'] ?? 'No Name';
-            String email = userData['email'] ?? 'No Email';
+                var userData = snapshot.data!.data() as Map<String, dynamic>;
+                String name = userData['fullName'] ?? 'No Name';
+                String email = userData['email'] ?? 'No Email';
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 30),
-                Padding(
-                  padding: const EdgeInsets.all(18.0),
-                  child: Stack(
-                    children: [
-                      const CircleAvatar(
-                        radius: 50,
-                        backgroundImage: AssetImage("assets/avatar.png"),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: CircleAvatar(
-                          backgroundColor: Colors.blueAccent,
-                          radius: 18,
-                          child: IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.white, size: 16),
-                            onPressed: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => const EditProfileScreen()));
-                            },
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 30),
+                    Padding(
+                      padding: const EdgeInsets.all(18.0),
+                      child: Stack(
+                        children: [
+                          const CircleAvatar(
+                            radius: 50,
+                            backgroundImage: AssetImage("assets/avatar.png"),
                           ),
-                        ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: CircleAvatar(
+                              backgroundColor: Colors.blueAccent,
+                              radius: 18,
+                              child: IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.white, size: 16),
+                                onPressed: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfileScreen()));
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10.0),
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 24.0,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                Text(
-                  email,
-                  style: const TextStyle(
-                    fontSize: 16.0,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 20.0),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildStatCard('Courses Enrolled', '25'),
-                      _buildStatCard('Courses Completed', '5'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20.0),
-                _buildListTile(Icons.lock, 'Change Password', () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context)=>ChangePasswordScreen()));
-                }),
-                const SizedBox(height: 5),
-                _buildListTile(Icons.notifications, 'Notifications', () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context)=>NotificationScreen()));
-
-                }),
-                const SizedBox(height: 5),
-                _buildListTile(Icons.history, 'Course History', () {}),
-                const SizedBox(height: 5),
-                // _buildListTile(Icons.star, 'Favorites', () {
-                //   Navigator.push(context, MaterialPageRoute(builder: (context)=>
-                //       BookmarkScreen(userId:  FirebaseAuth.instance.currentUser?.uid ?? '')));
-                // }),
-                const SizedBox(height: 5),
-                _buildListTile(Icons.info, 'About App', () {}),
-                const SizedBox(height: 5),
-                _buildListTile(Icons.settings, 'Settings', () {}),
-                const SizedBox(height: 5),
-                _buildListTile(Icons.help_outline, 'Help & Support', () {}),
-                const SizedBox(height: 5),
-                _buildListTile(Icons.question_answer_outlined, 'FAQs', () {}),
-                const SizedBox(height: 5),
-                _buildListTile(Icons.logout, 'Logout', () => _handleLogout(context)),
-                const SizedBox(height: 5),
-                _buildListTile(Icons.delete, 'Delete Account', () => _handleDeleteAccount(context)),
-                const SizedBox(height: 5),
-              ],
-            );
-          },
-        ),
+                    ),
+                    const SizedBox(height: 10.0),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 24.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Text(
+                      email,
+                      style: const TextStyle(
+                        fontSize: 16.0,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 20.0),
+                    _buildListTile(Icons.logout, 'Logout', () => _handleLogout(context)),
+                    const SizedBox(height: 5),
+                    _buildListTile(Icons.delete, 'Delete Account', () => _handleDeleteAccount(context)),
+                    const SizedBox(height: 5),
+                  ],
+                );
+              },
+            ),
+          ),
+          if (_isLoggingOut)
+            const Center(
+              child: CircularProgressIndicator(),
+            ),
+        ],
       ),
     );
   }
 
-  // Helper widget to build statistic cards
-  Widget _buildStatCard(String title, String value) {
-    return Card(
-      color: Colors.blueAccent.shade100,
-      elevation: 5,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16.0,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10.0),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 24.0,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Helper widget to build ListTile with an onTap callback
+  // Helper method to build list tile with icon and title
   Widget _buildListTile(IconData icon, String title, VoidCallback onTap) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10.0),
@@ -302,7 +253,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         leading: Icon(icon, color: Colors.blueAccent),
         title: Text(title),
         onTap: onTap,
-
       ),
     );
   }

@@ -46,7 +46,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           await _firestoreService.addUserToFirestore(user.uid, {
             'fullName': fullName,
             'email': email,
-            
             'uid': user.uid,
             'role': _selectedRole,
             'createdAt': DateTime.now().toIso8601String(),
@@ -180,28 +179,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
 
                 const SizedBox(height: 30),
-                // Use the reusable GradientButton
-                DropdownButtonFormField<String>(
-                  value: _selectedRole,
-                  decoration: InputDecoration(
-                    labelText: 'Select Role',
-                    prefixIcon: Icon(Icons.supervised_user_circle,color: Colors.blueAccent,),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+               Text(
+                  'Select Role',
+                  style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+                ),
+                Row(
+                  children: [
+                    Radio<String>(
+                      value: 'Student',
+                      groupValue: _selectedRole,
+                      onChanged: (String? value) {
+                        setState(() {
+                          _selectedRole = value!;
+                        });
+                      },
                     ),
-                  ),
-                  items: <String>['Student', 'Instructor']
-                      .map((role) => DropdownMenuItem<String>(
-                    value: role,
-                    child: Text(role,style: TextStyle(color: Colors.grey.shade700),),
-                  ))
-                      .toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedRole = newValue!;
-                    });
-                  },
-                  validator: (value) => value == null ? 'Please select a role' : null,
+                    Text(
+                      'Student',
+                      style: TextStyle(color: Colors.grey.shade700),
+                    ),
+                    const SizedBox(width: 20),
+                    Radio<String>(
+                      value: 'Instructor',
+                      groupValue: _selectedRole,
+                      onChanged: (String? value) {
+                        setState(() {
+                          _selectedRole = value!;
+                        });
+                      },
+                    ),
+                    Text(
+                      'Instructor',
+                      style: TextStyle(color: Colors.grey.shade700),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 30,),
                 GradientButton(

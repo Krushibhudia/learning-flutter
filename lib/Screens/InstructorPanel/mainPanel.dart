@@ -3,7 +3,7 @@ import 'package:flutterpro/Screens/InstructorPanel/InstructorDashBoard_Screen.da
 import 'package:flutterpro/Screens/InstructorPanel/Settings_Screen.dart';
 
 import 'Analytics_screen.dart';
-import 'CourseManage/CourseManagement_Screen.dart';
+import 'CourseManage/CreateCourse_Screen.dart';
 import 'Webinar_screen.dart';
 
 class mainPanel extends StatefulWidget {
@@ -19,7 +19,7 @@ class _mainPanelState extends State<mainPanel> {
   final List<Widget> _pages = [
     InstructorDashboardScreen(),
     AnalyticsReportsPage(),
-    CourseManagementScreen(),
+    CreateCourseScreen(),
     LiveSessionManagementScreen(),
     SettingsScreen()
   ];

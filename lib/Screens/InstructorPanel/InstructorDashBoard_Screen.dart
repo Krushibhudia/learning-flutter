@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutterpro/Screens/InstructorPanel/CourseManage/CreateCourse_Screen.dart';
+import 'package:flutterpro/Screens/InstructorPanel/CourseManage/ManageCourse.dart';
 import 'InstructorProfile_screen.dart';
 
 class InstructorDashboardScreen extends StatefulWidget {
@@ -18,6 +20,7 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
   int _totalStudents = 0;
   double _averageRating = 0.0;
   int _totalCourses = 0;
+  String? _selectedOption;
 
   @override
   void initState() {
@@ -73,6 +76,65 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
           }),
         ],
       ),
+        drawer: Drawer(
+  child: ListView(
+    padding: EdgeInsets.zero,
+    children: [
+      DrawerHeader(
+        decoration: BoxDecoration(
+          color: Colors.blue,
+        ),
+        child: Text(
+          'Instructor Menu',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+          ),
+        ),
+      ),
+      // Course Management - ExpansionTile
+      ExpansionTile(
+        title: Text('Course Management'),
+        children: [
+          ListTile(
+            title: Text('Create Course'),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>CreateCourseScreen()));
+            },
+          ),
+          ListTile(
+            title: Text('Manage Courses'),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>ManageCourseScreen()));
+            },
+          ),
+          ListTile(
+            title: Text('Course Reports'),
+            onTap: () {
+              // Navigate to Course Reports screen
+            },
+          ),
+        ],
+      ),
+      ListTile(
+        title: Text('Instructor Profile'),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => InstructorProfilePage()),
+          );
+        },
+      ),
+      ListTile(
+        title: Text('Settings'),
+        onTap: () {
+          // Navigate to Settings screen
+        },
+      ),
+    ],
+  ),
+),
+
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),

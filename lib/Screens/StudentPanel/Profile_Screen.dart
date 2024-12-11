@@ -62,7 +62,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       try {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
-       
           // Sign out from Firebase Authentication
           await FirebaseAuth.instance.signOut();
 
@@ -101,7 +100,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Delete Account"),
-          content: const Text("Are you sure you want to delete your account? This action is irreversible."),
+          content: const Text(
+              "Are you sure you want to delete your account? This action is irreversible."),
           actions: <Widget>[
             TextButton(
               onPressed: () {
@@ -143,10 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       },
     );
   }
-  Future<bool> _isUserLoggedIn() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('isLoggedIn') ?? false; // Returns false if not found
-  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -197,8 +194,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               radius: 18,
                               child: IconButton(
                                 icon: const Icon(Icons.edit, color: Colors.white, size: 16),
-                                onPressed: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => const EditProfileScreen()));
+                                onPressed: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const EditProfileScreen(),
+                                    ),
+                                  );
+                                  setState(() {}); // Trigger a rebuild to refresh user data
                                 },
                               ),
                             ),

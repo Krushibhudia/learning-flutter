@@ -12,6 +12,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String? userName;
+    String? userId;
+
   String searchQuery = "";
   final TextEditingController searchController = TextEditingController();
 
@@ -40,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
           .doc(user.uid)
           .get();
       setState(() {
+                userId = user.uid;  // Fetch the userId
+
         userName = userDoc.data()?['fullName'] ?? 'User';
       });
     }
@@ -187,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
               courseTitle: courseTitle,
               courseImage: courseImage,
               courseDescription: courseDescription,
-              lectures: [],
+              lectures: [], userId: userId!,
              // quizzes: [],
             ),
           ),

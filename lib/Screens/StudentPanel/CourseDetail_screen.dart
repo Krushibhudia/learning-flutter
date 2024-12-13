@@ -9,6 +9,8 @@ class CourseDetailScreen extends StatelessWidget {
   final String courseTitle;
   final String courseImage;
   final String courseDescription;
+    final String userId; // Pass the userId to identify the user
+
   final List<Map<String, String>> lectures;
 
   const CourseDetailScreen({
@@ -17,8 +19,63 @@ class CourseDetailScreen extends StatelessWidget {
     required this.courseTitle,
     required this.courseImage,
     required this.courseDescription,
+    required this.userId, // Add userId to constructor
+
     required this.lectures,
   }) : super(key: key);
+
+  Future<void> enrollCourse(BuildContext context) async {
+    // Show confirmation dialog
+    bool confirmEnrollment = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Confirm Enrollment"),
+          content: Text("Do you want to enroll in the course '$courseTitle'?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // User cancels
+              },
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // User confirms
+              },
+              child: Text("Confirm"),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+
+    if (confirmEnrollment) {
+      // Show Snackbar confirmation
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enrolled successfully!')),
+      );
+
+      try {
+        // Update Firestore collections
+        // Update user's enrolled courses
+        FirebaseFirestore.instance.collection('users').doc(userId).update({
+          'enrolledCourses': FieldValue.arrayUnion([courseId]),
+        });
+
+        // Update course's enrolled users
+        FirebaseFirestore.instance.collection('courses').doc(courseId).update({
+          'enrolledUsers': FieldValue.arrayUnion([userId]),
+        });
+      } catch (e) {
+        // Handle errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error enrolling in the course: $e')),
+        );
+      }
+    }
+  }
+
 
   Future<List<Map<String, dynamic>>> fetchQuizzes() async {
     try {
@@ -126,9 +183,8 @@ class CourseDetailScreen extends StatelessWidget {
     color: Colors.white,
     child: GradientButton(
       onPressed: () {
-        // Enroll Course logic here
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Enrolled successfully!')),
+  enrollCourse(context); // Call enrollCourse on button press        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enrolled successfully!'),
         );
       },
       buttonText: 'Enroll Now',

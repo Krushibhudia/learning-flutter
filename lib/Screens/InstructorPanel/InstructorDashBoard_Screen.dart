@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutterpro/Screens/InstructorPanel/CourseManage/CreateCourse_Screen.dart';
 import 'package:flutterpro/Screens/InstructorPanel/CourseManage/ManageCourse.dart';
-import 'package:flutterpro/Screens/InstructorPanel/CourseManage/CourseAnalytics.dart';
+import 'package:flutterpro/Screens/InstructorPanel/InstructorProfile_screen.dart';
 import 'package:flutterpro/Screens/StudentPanel/Profile_Screen.dart';
 import 'package:flutterpro/Screens/StudentPanel/Quiz_Screen.dart';
 
@@ -172,51 +172,22 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Instructor Dashboard"),
+        backgroundColor: Colors.blueAccent,
+        title: Text("Instructor Dashboard",style: TextStyle(
+                color: Colors.white,
+              ),),
         actions: [
           IconButton(
-            icon: Icon(Icons.account_circle),
+            icon: Icon(Icons.account_circle,color: Colors.white,),
             onPressed: () {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => ProfileScreen()));
+                      builder: (context) => InstructorProfilePage()));
             },
           ),
         ],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue,
-              ),
-              child: Text(
-                'Instructor Menu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
-              ),
-            ),
-            ListTile(
-              title: Text('Create Course'),
-              onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => CreateCourseScreen()));
-              },
-            ),
-            ListTile(
-              title: Text('Manage Courses'),
-              onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => ManageCourseScreen()));
-              },
-            ),
-          ],
-        ),
+      
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -226,10 +197,9 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
             children: [
               // Course & Student Summary Section
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildSummaryCard('Courses', _totalCourses.toString(), color: Colors.red),
-                  _buildSummaryCard('Students', _totalStudents.toString(), color: Colors.orange),
+                  _buildSummaryCard('Courses', _totalCourses.toString(), color: Colors.blueGrey),
                 ],
               ),
               SizedBox(height: 20),
@@ -246,7 +216,7 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
                             crossAxisCount: 1,
                             crossAxisSpacing: 1.0,
                             mainAxisSpacing: 1.0,
-                            childAspectRatio: 1.1,
+                            childAspectRatio: 0.92,
                           ),
                           itemCount: _courses.length,
                           itemBuilder: (context, index) {
@@ -269,13 +239,13 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
   Widget _buildSummaryCard(String title, String value, {Color? color}) {
     final baseColor = color ?? Colors.blueAccent;
 
-    return Card(
+    return Center(child:Card(
       elevation: 6,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
       child: Container(
-        width: 175,
+        width: 360,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -289,9 +259,9 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: baseColor.withOpacity(0.4),
+              color: baseColor.withOpacity(0.8),
               blurRadius: 6,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -301,7 +271,7 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
             Text(
               value,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
@@ -317,10 +287,9 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
-
 class CourseCard extends StatelessWidget {
   final Map<String, dynamic> course;
   final VoidCallback onEdit;
@@ -338,71 +307,117 @@ class CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.network(
-              course['image'] ?? 'https://via.placeholder.com/150',
-              width: double.infinity,
-              height: 120,
-              fit: BoxFit.cover,
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shadowColor: Colors.black.withOpacity(0.3),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image Section
+            ClipRRect(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+              child: Image.network(
+                course['image'] ?? 'https://via.placeholder.com/150',
+                width: double.infinity,
+                height: 180,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  course['title'] ?? 'Untitled',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Course Title
+                  Text(
+                    course['title'] ?? 'Untitled',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 4),
-                Text(
-                  course['category'] ?? 'Uncategorized',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
+                  SizedBox(height: 6),
+
+                  // Course Category
+                  Text(
+                    course['category'] ?? 'Uncategorized',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
-                SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: onEdit,
-                        child: Text('Edit'),
+                  SizedBox(height: 12),
+
+                  // Action Buttons Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: onEdit,
+                          child: Text('Edit',style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueAccent,
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: onDelete,
+                          child: Text('Delete',style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12),
+
+                  // Add Quiz Button
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: onAddQuiz,
+                      child: Text('Add Quiz',style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.greenAccent,
+                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: onDelete,
-                        child: Text('Delete'),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: onAddQuiz,
-                  child: Text('Add Quiz'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

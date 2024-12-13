@@ -10,7 +10,6 @@ import 'dart:io';
 
 import '../../../Custom_Widgets/CustomTextField.dart';
 import '../../../Custom_Widgets/GradientButton.dart';
-import '../ManageCourse_screen.dart';
 import 'PreviewCourse_Screen.dart';
 
 class CreateCourseScreen extends StatefulWidget {
@@ -148,18 +147,10 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Create Course'),
-      actions: [
-        IconButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ManageLessonsScreen()),
-            );
-          },
-          icon: Icon(Icons.edit_note),
-        ),
-      ],),
+      appBar: AppBar(
+        backgroundColor: Colors.blueAccent,
+        title: Text('Create Course',style: TextStyle(color: Colors.white),),
+    ),
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.all(16.0),

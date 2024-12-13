@@ -90,7 +90,8 @@ class _InstructorProfilePageState extends State<InstructorProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Instructor Profile'),
+        backgroundColor: Colors.blueAccent,
+        title: const Text('Instructor Profile',style: TextStyle(color: Colors.white),),
        
       ),
       body: isLoading

@@ -102,7 +102,7 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Course saved successfully!')));
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => QuizScreen(courseId: courseId)),
+        MaterialPageRoute(builder: (context) => QuizScreen(courseId: courseId,)),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving course: $e')));

@@ -133,7 +133,7 @@ class _ManageCourseScreenState extends State<ManageCourseScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => QuizScreen(courseId: courseId),
+        builder: (context) => QuizScreen(courseId: courseId, ),
       ),
     );
   }

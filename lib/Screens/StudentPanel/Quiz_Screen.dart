@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 class QuizScreen extends StatefulWidget {
   final String courseId;
-  QuizScreen({required this.courseId});
+  QuizScreen({required this.courseId, String? quizId});
 
   @override
   _QuizScreenState createState() => _QuizScreenState();

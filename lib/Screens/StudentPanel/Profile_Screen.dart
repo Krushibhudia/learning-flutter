@@ -1,12 +1,11 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutterpro/Screens/StudentPanel/Bookmark_screen.dart';
-import 'package:flutterpro/Screens/StudentPanel/Notification_screen.dart';
-import 'package:flutterpro/Screens/authentication/ChangePassword_Screen.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutterpro/Screens/authentication/Login_Screen.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
-import '../authentication/EditProfile_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -17,17 +16,103 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoggingOut = false;
+  String? _profileImageUrl;
+  File? _profileImageFile;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
 
   // Fetch current user data from Firestore
-  Future<DocumentSnapshot> _getUserData() async {
-    User? currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      return await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
+  Future<void> _fetchUserData() async {
+    try {
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        DocumentSnapshot userDoc =
+            await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+        if (userDoc.exists) {
+          setState(() {
+            _profileImageUrl = userDoc['profileImageUrl'];
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching user data: $e");
     }
-    throw Exception('User not logged in');
+  }
+
+  // Pick an image from the gallery
+  Future<void> _pickProfileImage() async {
+  final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+  if (pickedFile != null) {
+    setState(() {
+      _profileImageFile = File(pickedFile.path);
+    });
+    _showImagePreviewDialog();
+  }
+}
+
+// Show a dialog to preview the selected image and confirm the upload
+void _showImagePreviewDialog() {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Preview Image"),
+        content: _profileImageFile != null
+            ? Image.file(_profileImageFile!)
+            : const Text("No image selected."),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _uploadProfileImage();
+            },
+            child: const Text("Upload"),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
+  // Upload the profile image to Firebase Storage and update Firestore
+  Future<void> _uploadProfileImage() async {
+    try {
+      String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      Reference ref = FirebaseStorage.instance.ref().child('profile_images/$fileName');
+      await ref.putFile(_profileImageFile!);
+      String downloadUrl = await ref.getDownloadURL();
+
+      // Update the user's profile image URL in Firestore
+      User? currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).update({
+          'profileImageUrl': downloadUrl,
+        });
+
+        setState(() {
+          _profileImageUrl = downloadUrl;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile image updated successfully!')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error uploading image: $e')),
+      );
+    }
   }
 
   // Handle logout
@@ -42,15 +127,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           content: const Text("Are you sure you want to log out?"),
           actions: <Widget>[
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false); // Dismiss dialog with no action
-              },
+              onPressed: () => Navigator.of(context).pop(false),
               child: const Text("Cancel"),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(true); // Dismiss dialog and confirm logout
-              },
+              onPressed: () => Navigator.of(context).pop(true),
               child: const Text("Logout"),
             ),
           ],
@@ -60,30 +141,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (confirmLogout == true) {
       try {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          // Sign out from Firebase Authentication
-          await FirebaseAuth.instance.signOut();
+        await FirebaseAuth.instance.signOut();
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
 
-          // Clear SharedPreferences
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          await prefs.clear(); // Clear all saved preferences
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
 
-          // Navigate to Login Screen after logout
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-            );
-          }
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Logged out successfully')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Logged out successfully')),
+        );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error logging out: ${e.toString()}')),
+          SnackBar(content: Text('Error logging out: $e')),
         );
       } finally {
         setState(() => _isLoggingOut = false);
@@ -91,57 +163,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } else {
       setState(() => _isLoggingOut = false);
     }
-  }
-
-  // Handle delete account
-  Future<void> _handleDeleteAccount(BuildContext context) async {
-    bool? confirmDelete = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Delete Account"),
-          content: const Text(
-              "Are you sure you want to delete your account? This action is irreversible."),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop(true);
-                try {
-                  final user = FirebaseAuth.instance.currentUser;
-                  if (user != null) {
-                    await FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(user.uid)
-                        .delete();
-                    await user.delete();
-
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    );
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Account deleted successfully')),
-                    );
-                  }
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error deleting account: ${e.toString()}')),
-                  );
-                }
-              },
-              child: const Text("Delete"),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -155,108 +176,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            child: FutureBuilder<DocumentSnapshot>(
-              future: _getUserData(), // Fetch the current user's data
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                if (!snapshot.hasData || !snapshot.data!.exists) {
-                  return const Center(child: Text('User not found.'));
-                }
-
-                var userData = snapshot.data!.data() as Map<String, dynamic>;
-                String name = userData['fullName'] ?? 'No Name';
-                String email = userData['email'] ?? 'No Email';
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 30),
-                    Padding(
-                      padding: const EdgeInsets.all(18.0),
-                      child: Stack(
-                        children: [
-                          const CircleAvatar(
-                            radius: 50,
-                            backgroundImage: AssetImage("assets/avatar.png"),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: CircleAvatar(
-                              backgroundColor: Colors.blueAccent,
-                              radius: 18,
-                              child: IconButton(
-                                icon: const Icon(Icons.edit, color: Colors.white, size: 16),
-                                onPressed: () async {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const EditProfileScreen(),
-                                    ),
-                                  );
-                                  setState(() {}); // Trigger a rebuild to refresh user data
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 30),
+                Center(
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundImage: _profileImageUrl != null
+                            ? NetworkImage(_profileImageUrl!)
+                            : const AssetImage("assets/avatar.png") as ImageProvider,
                       ),
-                    ),
-                    const SizedBox(height: 10.0),
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 24.0,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                      IconButton(
+                        icon: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.blueAccent,
+                          size: 28,
+                        ),
+                        onPressed: _pickProfileImage,
                       ),
-                    ),
-                    Text(
-                      email,
-                      style: const TextStyle(
-                        fontSize: 16.0,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 20.0),
-                    _buildListTile(Icons.logout, 'Logout', () => _handleLogout(context)),
-                    const SizedBox(height: 5),
-                    _buildListTile(Icons.delete, 'Delete Account', () => _handleDeleteAccount(context)),
-                    const SizedBox(height: 5),
-                  ],
-                );
-              },
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildListTile(Icons.logout, 'Logout', () => _handleLogout(context)),
+              ],
             ),
           ),
-          if (_isLoggingOut)
-            const Center(
-              child: CircularProgressIndicator(),
-            ),
+          if (_isLoggingOut) const Center(child: CircularProgressIndicator()),
         ],
       ),
     );
   }
 
-  // Helper method to build list tile with icon and title
   Widget _buildListTile(IconData icon, String title, VoidCallback onTap) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10.0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: Colors.grey.shade100,
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.blueAccent),
-        title: Text(title),
-        onTap: onTap,
-      ),
+    return ListTile(
+      leading: Icon(icon, color: Colors.blueAccent),
+      title: Text(title),
+      onTap: onTap,
     );
   }
 }

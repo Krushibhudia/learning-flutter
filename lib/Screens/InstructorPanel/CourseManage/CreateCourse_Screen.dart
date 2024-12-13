@@ -199,33 +199,8 @@ class _CreateCourseScreenState extends State<CreateCourseScreen> {
               SizedBox(height: 10),
               ElevatedButton(onPressed: () => _showBottomSheet(context), child: Text('Pick an Image')),
               SizedBox(height: 20),
-              Row(
-                children: [
-                  Checkbox(
-                    value: _isCoursePublished,
-                    onChanged: (value) {
-                      setState(() {
-                        _isCoursePublished = value!;
-                      });
-                    },
-                  ),
-                  Text('Publish Course'),
-                ],
-              ),
-              SizedBox(height: 20),
-              GradientButton(
-                onPressed: () {
-                  String courseId = _firestore.collection('courses').doc().id;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => QuizScreen(courseId: courseId)),
-                  );
-                },
-                buttonText: 'Add Quiz',
-                gradientColors: [Colors.purple, Colors.deepPurple],
-                label: '',
-                child: Text(""),
-              ),
+         
+              
               GradientButton(
                 onPressed: saveCourse,
                 buttonText: 'Save Course',

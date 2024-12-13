@@ -1,16 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class QuizScreen extends StatefulWidget {
   final String courseId;
   QuizScreen({required this.courseId});
+
   @override
   _QuizScreenState createState() => _QuizScreenState();
-
 }
 
 class _QuizScreenState extends State<QuizScreen> {
-
   final TextEditingController _quizTitleController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   List<Question> _questions = [
     Question(questionText: '', options: List.filled(4, ''), correctAnswerIndex: 0),
   ];
@@ -39,7 +41,7 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   }
 
-  void _saveQuiz() {
+  void _saveQuiz() async {
     if (_quizTitleController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please enter a quiz title')),
@@ -56,14 +58,27 @@ class _QuizScreenState extends State<QuizScreen> {
       return;
     }
 
-    Navigator.pop(context, {
-      'title': _quizTitleController.text,
-      'questions': _questions.map((q) => {
-            'questionText': q.questionText,
-            'options': q.options,
-            'correctAnswerIndex': q.correctAnswerIndex,
-          }).toList(),
-    });
+    try {
+      // Add quiz to Firestore
+      await _firestore.collection('courses').doc(widget.courseId).collection('quizzes').add({
+        'title': _quizTitleController.text,
+        'questions': _questions.map((q) => {
+          'questionText': q.questionText,
+          'options': q.options,
+          'correctAnswerIndex': q.correctAnswerIndex,
+        }).toList(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Quiz saved successfully')),
+      );
+
+      Navigator.pop(context); // Go back after saving the quiz
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving quiz: $e')),
+      );
+    }
   }
 
   @override

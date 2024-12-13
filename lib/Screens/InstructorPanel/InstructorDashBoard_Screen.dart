@@ -27,55 +27,70 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
   }
 
   Future<void> _fetchInstructorData() async {
-    try {
-      String userId = _auth.currentUser?.uid ?? '';
-      if (userId.isEmpty) {
-        print('No user is logged in');
-        return;
-      }
+  try {
+    String userId = _auth.currentUser?.uid ?? '';
+    if (userId.isEmpty) {
+      print('No user is logged in');
+      return;
+    }
 
-      QuerySnapshot courseSnapshot = await _firestore
+    // Fetch courses for the logged-in instructor
+    QuerySnapshot courseSnapshot = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('courses')
+        .get();
+
+    if (courseSnapshot.docs.isEmpty) {
+      print('No courses found');
+      return;
+    }
+
+    // Fetch all courses and their student count
+    List<Map<String, dynamic>> fetchedCourses = [];
+    int totalStudentsCount = 0;
+
+    // Iterate through all course documents
+    for (var doc in courseSnapshot.docs) {
+      Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
+      courseData['id'] = doc.id;
+
+      // Count the number of students in the enrolledStudents subcollection
+      QuerySnapshot studentsSnapshot = await _firestore
           .collection('users')
           .doc(userId)
           .collection('courses')
+          .doc(doc.id)
+          .collection('enrolledStudents')
           .get();
 
-      List<Map<String, dynamic>> fetchedCourses = [];
+      int studentCount = studentsSnapshot.size; // The number of documents in this subcollection
 
-      for (var doc in courseSnapshot.docs) {
-        Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
-        courseData['id'] = doc.id;
+      // Print to debug
+      print("Course ID: ${doc.id}, Enrolled Students: $studentCount");
 
-        // Fetch the students subcollection for the course
-        QuerySnapshot studentsSnapshot = await _firestore
-            .collection('users')
-            .doc(userId)
-            .collection('courses')
-            .doc(doc.id)
-            .collection('enrolledCourses')
-            .get();
+      // Update the total students count
+      totalStudentsCount += studentCount;
 
-        // Add students data to the course
-        courseData['students'] = studentsSnapshot.docs.map((studentDoc) {
-          return studentDoc.data() as Map<String, dynamic>;
-        }).toList();
+      // Add student count to course data
+      courseData['studentCount'] = studentCount;
 
-        fetchedCourses.add(courseData);
-      }
-
-      // Update state with the fetched data
-      setState(() {
-        _courses = fetchedCourses;
-        _totalCourses = _courses.length;
-        // _totalStudents = _courses.fold<int>(
-        //   0, // Initial sum is 0
-        //   (sum, course) => sum + (course['enrolledCourses']?.length ?? 0), // Ensures the return type is int
-        // );
-      });
-    } catch (e) {
-      print("Error fetching instructor data: $e");
+      // Add course data to the list
+      fetchedCourses.add(courseData);
     }
+
+    // Update state with fetched courses and student count
+    setState(() {
+      _courses = fetchedCourses;
+      _totalCourses = _courses.length;
+      _totalStudents = totalStudentsCount;
+    });
+  } catch (e) {
+    print("Error fetching instructor data: $e");
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -110,38 +125,20 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
                 ),
               ),
             ),
-            
-               ListTile(
-                  title: Text('Create Course'),
-                  onTap: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => CreateCourseScreen()));
-                  },
-                ),
-             ListTile(
-                  title: Text('Manage Courses'),
-                  onTap: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => ManageCourseScreen()));
-                  },
-                ),
-           
-            // ListTile(
-            //   title: Text('Course Analytics'),
-            //   onTap: () {
-            //     if (_courses.isNotEmpty) {
-            //       String courseTitle = _courses[0]['title'] ?? 'Default Course Title';
-            //       Navigator.push(
-            //         context,
-            //         MaterialPageRoute(
-            //           builder: (context) => CourseAnalyticsScreen(courseTitle: courseTitle),
-            //         ),
-            //       );
-            //     } else {
-            //       print('No courses available');
-            //     }
-            //   },
-            // ),
+            ListTile(
+              title: Text('Create Course'),
+              onTap: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => CreateCourseScreen()));
+              },
+            ),
+            ListTile(
+              title: Text('Manage Courses'),
+              onTap: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => ManageCourseScreen()));
+              },
+            ),
           ],
         ),
       ),
@@ -230,18 +227,21 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
     );
   }
 
-  Widget _buildCourseDetails(Map<String, dynamic> course) {
-    List<dynamic> students = course['students'] ?? [];
+Widget _buildCourseDetails(Map<String, dynamic> course) {
+  int studentCount = course['studentCount'] ?? 0;  // Get student count from course data
 
-    return ExpansionTile(
+  return Card(
+    elevation: 6,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(15),
+    ),
+    child: ListTile(
       title: Text(course['title'] ?? 'Untitled Course'),
-      subtitle: Text('${students.length} Students'),
-      children: students.map((student) {
-        return ListTile(
-          title: Text(student['name'] ?? 'Unnamed Student'),
-          subtitle: Text(student['email'] ?? 'No Email Provided'),
-        );
-      }).toList(),
-    );
-  }
+      subtitle: Text('$studentCount Students'),  // Display the student count
+    ),
+  );
+}
+
+
+
 }

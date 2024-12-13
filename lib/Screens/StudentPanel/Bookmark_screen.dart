@@ -168,7 +168,7 @@ class _BookmarkedScreenState extends State<BookmarkedScreen> {
                       courseDescription: course['description'],
                       courseProgress: 0.7,
                       lectures: course['lectures'],
-                      quizzes: course['quizzes'],
+                      quizzes: course['quizzes'], courseId: '',
                     ),
                   ),
                 );

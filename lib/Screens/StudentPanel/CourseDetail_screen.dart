@@ -19,7 +19,7 @@ class CourseDetailScreen extends StatelessWidget {
     this.courseProgress = 0.7,
     required this.lectures,
     required this.quizzes,
-    
+    required String courseId,
   });
 
   @override
@@ -88,30 +88,59 @@ class CourseDetailScreen extends StatelessWidget {
                           style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
                     ],
                   ),
-                  
                   const SizedBox(height: 16),
-   Align(
-  alignment: Alignment.center,
-  child: Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(8),
-    color: Colors.white,
-    child: GradientButton(
-      onPressed: () {
-        // Enroll Course logic here
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Enrolled successfully!')),
-        );
-      },
-      buttonText: 'Enroll Now',
-      gradientColors: const [
-        Colors.blue,
-        Colors.blueAccent,
-      ], label: '', child: Text(""), 
-    ),
-  ),
-),
-SizedBox(height: 8,),
+
+                  // Enroll Button
+                  Align(
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      color: Colors.white,
+                      child: GradientButton(
+                        onPressed: () {
+                          // Show confirmation dialog
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: const Text('Confirm Enrollment'),
+                                content: const Text('Are you sure you want to enroll in this course?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop(); // Close the dialog without doing anything
+                                    },
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop(); // Close the dialog
+
+                                      // Show Snackbar after confirmation
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Enrolled successfully!')),
+                                      );
+                                    },
+                                    child: const Text('Enroll'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                        buttonText: 'Enroll Now',
+                        gradientColors: const [
+                          Colors.blue,
+                          Colors.blueAccent,
+                        ],
+                        label: '',
+                        child: const Text(""),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
                   // Course Description
                   const Text(
                     'Course Description',
@@ -218,9 +247,6 @@ SizedBox(height: 8,),
               ),
             ),
           ),
-          // Sticky Enroll Button
-       
-
         ],
       ),
     );

@@ -1,7 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:flutterpro/Screens/InstructorPanel/CourseManage/CourseEditScreen.dart';
 import 'package:flutterpro/Screens/InstructorPanel/CourseManage/CreateCourse_Screen.dart';
 import 'package:flutterpro/Screens/StudentPanel/Quiz_Screen.dart'; // Ensure this is the correct path
 
@@ -85,7 +84,7 @@ class _ManageCourseScreenState extends State<ManageCourseScreen> {
         courses.removeWhere((course) => course['id'] == courseId);
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Course deleted successfully!.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Course deleted successfully!')));
     } catch (e) {
       print('Error deleting course: $e');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting course: $e')));
@@ -101,18 +100,12 @@ class _ManageCourseScreenState extends State<ManageCourseScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(color: Colors.white),
-                ),
+                child: Text('Cancel'),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(true),
+                child: Text('Delete'),
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.white),
-                ),
               ),
             ],
           ),
@@ -124,7 +117,7 @@ class _ManageCourseScreenState extends State<ManageCourseScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CreateEditCourseScreen(course: course),
+        builder: (context) => CreateCourseScreen(),
       ),
     );
   }
@@ -133,41 +126,36 @@ class _ManageCourseScreenState extends State<ManageCourseScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => QuizScreen(courseId: courseId, ),
+        builder: (context) => QuizScreen(courseId: courseId),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Manage Courses'),
-      ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : courses.isEmpty
-              ? Center(child: Text('No courses found.'))
-              : GridView.builder(
-                  padding: EdgeInsets.all(16.0),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,
-                    crossAxisSpacing: 1.0,
-                    mainAxisSpacing: 1.0,
-                    childAspectRatio: 1.2,
-                  ),
-                  itemCount: courses.length,
-                  itemBuilder: (context, index) {
-                    final course = courses[index];
-                    return CourseCard(
-                      course: course,
-                      onEdit: () => _editCourse(course),
-                      onDelete: () => _deleteCourse(course['id']),
-                      onAddQuiz: () => _addQuiz(course['id']),
-                    );
-                  },
+    return isLoading
+        ? Center(child: CircularProgressIndicator())
+        : courses.isEmpty
+            ? Center(child: Text('No courses found.'))
+            : GridView.builder(
+                padding: EdgeInsets.all(16.0),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 1,
+                  crossAxisSpacing: 1.0,
+                  mainAxisSpacing: 1.0,
+                  childAspectRatio: 1.2,
                 ),
-    );
+                itemCount: courses.length,
+                itemBuilder: (context, index) {
+                  final course = courses[index];
+                  return CourseCard(
+                    course: course,
+                    onEdit: () => _editCourse(course),
+                    onDelete: () => _deleteCourse(course['id']),
+                    onAddQuiz: () => _addQuiz(course['id']),
+                  );
+                },
+              );
   }
 }
 
@@ -247,7 +235,7 @@ class CourseCard extends StatelessWidget {
                 ElevatedButton(
                   onPressed: onAddQuiz,
                   child: Text('Add Quiz'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                 ),
               ],
             ),

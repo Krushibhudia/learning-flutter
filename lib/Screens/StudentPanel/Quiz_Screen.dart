@@ -1,219 +1,237 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 
-import 'Certificate_Screen.dart';
-
 class QuizScreen extends StatefulWidget {
-  final int quizId;
-
-  const QuizScreen({Key? key, required this.quizId}) : super(key: key);
-
+  final String courseId;
+  QuizScreen({required this.courseId});
   @override
-  _QuizScreenState createState() => _QuizScreenState();}
+  _QuizScreenState createState() => _QuizScreenState();
+
+}
 
 class _QuizScreenState extends State<QuizScreen> {
-late List<Map<String, dynamic>> questions;
-int currentQuestionIndex = 0;
-int score = 0;
-Timer? questionTimer;
-int timeLeft = 60;
-bool quizCompleted = false;
 
-@override
-void initState() {
-super.initState();
-questions = _loadQuizQuestions(widget.quizId);
-_startTimer();
-}
+  final TextEditingController _quizTitleController = TextEditingController();
+  List<Question> _questions = [
+    Question(questionText: '', options: List.filled(4, ''), correctAnswerIndex: 0),
+  ];
 
-@override
-void dispose() {
-questionTimer?.cancel();
-super.dispose();
-}
+  void _addQuestion() {
+    if (_questions.length < 50) {
+      setState(() {
+        _questions.add(Question(questionText: '', options: List.filled(4, ''), correctAnswerIndex: 0));
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Maximum of 50 questions allowed')),
+      );
+    }
+  }
 
-void _startTimer() {
-questionTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-if (timeLeft > 0) {
-setState(() {
-timeLeft--;
-});
-} else {
-_nextQuestion();
-}
-});
-}
+  void _removeQuestion(int index) {
+    if (_questions.length > 1) {
+      setState(() {
+        _questions.removeAt(index);
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('At least one question is required')),
+      );
+    }
+  }
 
-void _nextQuestion() {
-if (currentQuestionIndex < questions.length - 1) {
-setState(() {
-currentQuestionIndex++;
-timeLeft = 60; // Reset timer for the next question
-});
-} else {
-_finishQuiz();
-}
-}
+  void _saveQuiz() {
+    if (_quizTitleController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter a quiz title')),
+      );
+      return;
+    }
 
-void _finishQuiz() {
-questionTimer?.cancel();
-setState(() {
-quizCompleted = true;
-});
-}
+    bool allQuestionsValid = _questions.every((q) => q.questionText.isNotEmpty && q.options.every((o) => o.isNotEmpty));
 
-List<Map<String, dynamic>> _loadQuizQuestions(int quizId) {
-return [
-{
-'question': 'What is Flutter?',
-'options': [
-'A mobile framework',
-'A programming language',
-'A database',
-'None of the above'
-],
-'correctAnswer': 0,
-},
-{
-'question': 'What is Dart?',
-'options': ['A language', 'A framework', 'A tool', 'None of the above'],
-'correctAnswer': 0,
-},
-{
-'question': 'Which company developed Flutter?',
-'options': ['Google', 'Facebook', 'Apple', 'Microsoft'],
-'correctAnswer': 0,
-},
-{
-'question': 'Which of the following is a feature of Flutter?',
-'options': [
-'Cross-platform development',
-'Single platform development',
-'No UI',
-'None of the above'
-],
-'correctAnswer': 0,
-},
-{
-'question':
-'Which of the following is used to build mobile apps in Flutter?',
-'options': ['Widgets', 'Components', 'Views', 'None of the above'],
-'correctAnswer': 0,
-},
-];
-}
+    if (!allQuestionsValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please complete all questions and options')),
+      );
+      return;
+    }
 
-void _answerQuestion(int selectedOption) {
-if (selectedOption == questions[currentQuestionIndex]['correctAnswer']) {
-score += 2; // Each correct answer gives 2 marks
-}
-_nextQuestion();
-}
+    Navigator.pop(context, {
+      'title': _quizTitleController.text,
+      'questions': _questions.map((q) => {
+            'questionText': q.questionText,
+            'options': q.options,
+            'correctAnswerIndex': q.correctAnswerIndex,
+          }).toList(),
+    });
+  }
 
-@override
-Widget build(BuildContext context) {
-if (quizCompleted) {
-return Scaffold(
-appBar: AppBar(
-title: Text('Quiz Completed'),
-backgroundColor: Colors.blueAccent,
-elevation: 0,
-),
-body: Center(
-child: Padding(
-padding: const EdgeInsets.all(20.0),
-child: Column(
-mainAxisAlignment: MainAxisAlignment.center,
-children: [
-Text('Your Score: $score',
-style: TextStyle(
-fontSize: 32,
-fontWeight: FontWeight.bold,
-color: Colors.blueAccent)),
-SizedBox(height: 20),
-ElevatedButton(
-style: ElevatedButton.styleFrom(
-backgroundColor: Color.fromARGB(255, 163, 190, 236),
-padding:
-EdgeInsets.symmetric(vertical: 15.0, horizontal: 30.0),
-textStyle: TextStyle(fontSize: 18),
-shape: RoundedRectangleBorder(
-borderRadius: BorderRadius.circular(12.0),
-),
-),
-onPressed: () {
-Navigator.push(
-context,
-MaterialPageRoute(
-builder: (context) =>
-CertificateScreen(score: score)),
-);
-},
-child: Text('View Certificate',
-style: TextStyle(color: Colors.white)),
-),
-],
-),
-),
-),
-);
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Create Quiz'),
+        backgroundColor: Colors.blueAccent,
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _quizTitleController,
+              decoration: InputDecoration(
+                labelText: 'Quiz Title',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: 16),
+            Expanded(
+              child: ListView.builder(
+                itemCount: _questions.length,
+                itemBuilder: (context, index) {
+                  return QuestionCard(
+                    question: _questions[index],
+                    index: index,
+                    onDelete: () => _removeQuestion(index),
+                  );
+                },
+              ),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _addQuestion,
+              icon: Icon(Icons.add),
+              label: Text('Add Question'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _saveQuiz,
+              icon: Icon(Icons.save),
+              label: Text('Save Quiz'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-return Scaffold(
-appBar: AppBar(
-title: Text('Quiz - ${widget.quizId}'),
-backgroundColor: Colors.blueAccent,
-elevation: 0,
-),
-body: Padding(
-padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-child: Column(
-mainAxisAlignment: MainAxisAlignment.center,
-crossAxisAlignment: CrossAxisAlignment.center,
-children: [
-Text(
-'Time Left: $timeLeft sec',
-style: TextStyle(
-fontSize: 22,
-fontWeight: FontWeight.normal,
-color: Colors.red),
-),
-SizedBox(height: 30), // Add space between timer and question
-Text(
-questions[currentQuestionIndex]['question'],
-style: TextStyle(
-fontSize: 18,
-fontWeight: FontWeight.normal,
-color: Colors.black87),
-textAlign: TextAlign.center,
-),
-SizedBox(height: 30), // Add space between question and options
-...List.generate(questions[currentQuestionIndex]['options'].length,
-(index) {
-return Padding(
-padding: const EdgeInsets.symmetric(vertical: 8.0),
-child: TextButton(
-onPressed: () => _answerQuestion(index),
-style: TextButton.styleFrom(
-padding: EdgeInsets.symmetric(vertical: 15.0),
-textStyle:
-TextStyle(fontSize: 16, color: Colors.blueAccent),
-),
-child:
-Text(questions[currentQuestionIndex]['options'][index]),
-),
-);
-}),
-SizedBox(height: 20), // Space before the progress bar
-LinearProgressIndicator(
-value: (currentQuestionIndex + 1) / questions.length,
-backgroundColor: Colors.grey[300],
-valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
-minHeight: 8,
-),
-],
-),
-),
-);
+class Question {
+  String questionText;
+  List<String> options;
+  int correctAnswerIndex;
+
+  Question({required this.questionText, required this.options, required this.correctAnswerIndex});
 }
+
+class QuestionCard extends StatefulWidget {
+  final Question question;
+  final int index;
+  final VoidCallback onDelete;
+
+  QuestionCard({required this.question, required this.index, required this.onDelete});
+
+  @override
+  _QuestionCardState createState() => _QuestionCardState();
+}
+
+class _QuestionCardState extends State<QuestionCard> {
+  final _questionTextController = TextEditingController();
+  final List<TextEditingController> _optionControllers = List.generate(4, (_) => TextEditingController());
+  int _selectedOptionIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _questionTextController.text = widget.question.questionText;
+    for (int i = 0; i < 4; i++) {
+      _optionControllers[i].text = widget.question.options[i];
+    }
+    _selectedOptionIndex = widget.question.correctAnswerIndex;
+  }
+
+  @override
+  void dispose() {
+    _questionTextController.dispose();
+    for (var controller in _optionControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _updateCorrectAnswer(int index) {
+    setState(() {
+      _selectedOptionIndex = index;
+      widget.question.correctAnswerIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 5,
+      shadowColor: Colors.grey.withOpacity(0.3),
+      margin: EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _questionTextController,
+                    decoration: InputDecoration(
+                      labelText: 'Question ${widget.index + 1}',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (value) => widget.question.questionText = value,
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete, color: Colors.redAccent),
+                  onPressed: widget.onDelete,
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            Column(
+              children: List.generate(4, (i) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Radio<int>(
+                        value: i,
+                        groupValue: _selectedOptionIndex,
+                        activeColor: Colors.blueAccent,
+                        onChanged: (value) => _updateCorrectAnswer(i),
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: _optionControllers[i],
+                          decoration: InputDecoration(
+                            labelText: 'Option ${String.fromCharCode(65 + i)}',
+                            border: OutlineInputBorder(),
+                          ),
+                          onChanged: (value) => widget.question.options[i] = value,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

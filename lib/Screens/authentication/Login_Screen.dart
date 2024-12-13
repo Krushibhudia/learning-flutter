@@ -200,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   icon: Icons.email,
                   keyboardType: TextInputType.emailAddress,
                   obscureText: false,
-                  maxLines: 1,
+                  maxLines: 1,isRequired: true, labelText: '',
                   controller: _emailController,
                   validator: Validation.validateEmail,
                 ),
@@ -213,7 +213,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   icon: Icons.lock,
                   keyboardType: TextInputType.visiblePassword,
                   obscureText: _isObscure,
-                  maxLines: 1,
+                  maxLines: 1,isRequired: true, labelText: '',
                   controller: _passwordController,
                   validator: Validation.validatePassword,
                   toggleVisibility: () {
@@ -238,7 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Colors.blueAccent.shade700,
                     Colors.blue.shade500,
                     Colors.lightBlueAccent.shade200,
-                  ],
+                  ], label: '',child: Text(""), 
                 ),
 
                 const Spacer(),

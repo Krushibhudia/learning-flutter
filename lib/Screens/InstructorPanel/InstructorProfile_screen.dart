@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterpro/Screens/authentication/InstructorEditProfile_Screen.dart';
+import 'package:flutterpro/Screens/authentication/Login_Screen.dart';
 import '../../Custom_Widgets/GradientButton.dart';
 import 'Earning&Payment_Screen.dart';
 
@@ -42,7 +43,7 @@ class _InstructorProfilePageState extends State<InstructorProfilePage> {
             email = data['email'] ?? 'john@gmail.com';
             expertise = data['expertise'] ?? 'Expert in Technology & Design';
             about = data['about'] ?? 'No bio available.';
-            profileImageUrl = data['profileImage'] ?? profileImageUrl;
+          profileImageUrl = data['profileImageUrl'] ?? 'https://via.placeholder.com/150'; // Correct field name
             isLoading = false;
           });
         } else {
@@ -58,20 +59,39 @@ class _InstructorProfilePageState extends State<InstructorProfilePage> {
       setState(() => isLoading = false);
     }
   }
+ Future<void> _logout() async {
+    try {
+      await _auth.signOut();
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>LoginScreen()));// Update with your login route
+    } catch (e) {
+      print("Error logging out: $e");
+    }
+  }
 
+  // Function to handle account deletion
+  Future<void> _deleteAccount() async {
+    try {
+      String? uid = _auth.currentUser?.uid;
+      if (uid != null) {
+        // Delete user from Firestore
+        await _firestore.collection('users').doc(uid).delete();
+
+        // Delete user authentication account
+        await _auth.currentUser?.delete();
+
+        // Redirect to login screen after deletion
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>LoginScreen()));// Update with your login route
+      }
+    } catch (e) {
+      print("Error deleting account: $e");
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Instructor Profile'),
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => EarningsAndPaymentScreen()));
-            },
-            icon: const Icon(Icons.attach_money_sharp),
-          ),
-        ],
+       
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
@@ -118,10 +138,10 @@ class _InstructorProfilePageState extends State<InstructorProfilePage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: const [
-                              Icon(Icons.check_circle, color: Colors.greenAccent),
+                              Icon(Icons.check_circle, color: Colors.transparent),
                               SizedBox(width: 5),
                               Text(
-                                'Verified Instructor',
+                                '',
                                 style: TextStyle(color: Colors.white),
                               ),
                             ],
@@ -163,10 +183,39 @@ class _InstructorProfilePageState extends State<InstructorProfilePage> {
                             _fetchUserData();
                           });
                         },
-                        gradientColors: [Colors.blue, Colors.blueAccent],
+                        gradientColors: [Colors.blue, Colors.blueAccent], label: '',child: Text(""), 
                       ),
                     ),
+
                     const SizedBox(height: 16),
+                     Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: GradientButton(
+  onPressed: _logout,
+  gradientColors: [Colors.blue, Colors.blueAccent],
+  label: 'Logout',
+  buttonText: 'Logout',
+  child: const Text(
+    'Logout',
+    style: TextStyle(color: Colors.white, fontSize: 16),
+  ),
+),
+
+                    ),
+                    const SizedBox(height: 16),
+                     Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child:  GradientButton(
+  onPressed: _deleteAccount,
+  gradientColors: [Colors.redAccent, Colors.deepOrangeAccent],
+  label: 'Delete Account',
+  buttonText: 'Delete Account',
+  child: const Text(
+    'Delete Account',
+    style: TextStyle(color: Colors.white, fontSize: 16),
+  ),
+),
+                    ),
                   ],
                 ),
               ),

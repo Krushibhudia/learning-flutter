@@ -23,7 +23,7 @@ class CustomTextField extends StatelessWidget {
     this.toggleVisibility,
     this.controller,
     this.maxLines,
-    this.enabled = true,
+    this.enabled = true, required bool isRequired, required String labelText,
   });
 
   @override

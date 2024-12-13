@@ -19,6 +19,7 @@ class CourseDetailScreen extends StatelessWidget {
     this.courseProgress = 0.7,
     required this.lectures,
     required this.quizzes,
+    
   });
 
   @override
@@ -87,32 +88,30 @@ class CourseDetailScreen extends StatelessWidget {
                           style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
                     ],
                   ),
+                  
                   const SizedBox(height: 16),
-
-                  // Course Progress Section
-                  const Divider(thickness: 1, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Course Progress',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: courseProgress,
-                      backgroundColor: Colors.grey[300],
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
-                      minHeight: 8,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${(courseProgress * 100).toInt()}% completed',
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 16),
-                  ),
-                  const SizedBox(height: 24),
-
+   Align(
+  alignment: Alignment.center,
+  child: Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(8),
+    color: Colors.white,
+    child: GradientButton(
+      onPressed: () {
+        // Enroll Course logic here
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enrolled successfully!')),
+        );
+      },
+      buttonText: 'Enroll Now',
+      gradientColors: const [
+        Colors.blue,
+        Colors.blueAccent,
+      ], label: '', child: Text(""), 
+    ),
+  ),
+),
+SizedBox(height: 8,),
                   // Course Description
                   const Text(
                     'Course Description',
@@ -201,14 +200,14 @@ class CourseDetailScreen extends StatelessWidget {
                                 color: Colors.blueAccent),
                             onPressed: () {
                               // Navigate to the QuizScreen
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => QuizScreen(
-                                    quizId: index,
-                                  ),
-                                ),
-                              );
+                              // Navigator.push(
+                              //   context,
+                              //   MaterialPageRoute(
+                              //     builder: (context) => QuizScreen(
+                              //       quizId: ,
+                              //     ),
+                              //   ),
+                              // );
                             },
                           ),
                         ),
@@ -220,27 +219,8 @@ class CourseDetailScreen extends StatelessWidget {
             ),
           ),
           // Sticky Enroll Button
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              color: Colors.white,
-              child: GradientButton(
-                onPressed: () {
-                  // Enroll Course logic here
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Enrolled successfully!')),
-                  );
-                },
+       
 
-                buttonText: 'Enroll Now', gradientColors: [
-                  Colors.blue,
-                Colors.blueAccent
-              ],
-                ),
-              ),
-            ),
         ],
       ),
     );

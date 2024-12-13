@@ -87,7 +87,7 @@ class ChangeTemplateScreen extends StatelessWidget {
                   onPressed: () {
                     // Save course details to database (e.g., Firebase)
                   },
-                  gradientColors: [Colors.blue, Colors.blueAccent],
+                  gradientColors: [Colors.blue, Colors.blueAccent], label: '',child: Text(""), 
                 ),
              )
     ],

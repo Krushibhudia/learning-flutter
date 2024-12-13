@@ -144,7 +144,7 @@ class EarningsAndPaymentScreen extends StatelessWidget {
                 onPressed: () {
                   // Handle withdrawal logic
                 },
-                gradientColors: [Colors.blueAccent, Colors.lightBlue],
+                gradientColors: [Colors.blueAccent, Colors.lightBlue], label: '',child: Text(""), 
               ),
             ),
           ],

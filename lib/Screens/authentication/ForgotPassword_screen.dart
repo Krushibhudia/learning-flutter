@@ -114,7 +114,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 keyboardType: TextInputType.emailAddress,
                 obscureText: false,
                 controller: _emailController,
-                validator: (value) => Validation.validateEmail(value),
+                validator: (value) => Validation.validateEmail(value), isRequired: true, labelText: '',
               ),
             ),
             const SizedBox(height: 30),
@@ -126,7 +126,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 Colors.blueAccent.shade700,
                 Colors.blue.shade500,
                 Colors.lightBlueAccent.shade200,
-              ],
+              ], label: '',child: Text(""), 
             ),
             const SizedBox(height: 20),
             Center(

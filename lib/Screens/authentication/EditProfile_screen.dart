@@ -110,7 +110,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     CustomTextField(
                       hintText: 'Full Name',obscureText: false,
                       icon: Icons.person,
-                      controller: _fullNameController, keyboardType: TextInputType.text,
+                      controller: _fullNameController, keyboardType: TextInputType.text, isRequired: true, labelText: '',
                     ),
                     const SizedBox(height: 15),
                     CustomTextField(
@@ -118,20 +118,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       icon: Icons.email,
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      enabled: false, obscureText: false, // Prevent editing the email
+                      enabled: false, obscureText: false, isRequired: true, labelText: '', // Prevent editing the email
                     ),
                     const SizedBox(height: 15),
                     CustomTextField(
                       hintText: 'Phone',obscureText: false,
                       icon: Icons.phone,
                       controller: _phoneController,
-                      keyboardType: TextInputType.phone,
+                      keyboardType: TextInputType.phone, isRequired: true, labelText: '',
                     ),
                     const SizedBox(height: 15),
                     CustomTextField(
                       hintText: 'Bio',
                       icon: Icons.info_outline,obscureText: false,
-                      controller: _bioController, keyboardType: TextInputType.text,
+                      controller: _bioController, keyboardType: TextInputType.text, isRequired: true, labelText: '',
                     ),
                     const SizedBox(height: 30),
                     GradientButton(
@@ -140,7 +140,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       gradientColors: [
                         Colors.blueAccent,
                         Colors.lightBlue,
-                      ],
+                      ], label: '',child: Text(""), 
                     ),
                   ],
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutterpro/Custom_Widgets/GradientButton.dart';
 import 'CourseDetail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -48,27 +49,37 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Toggle bookmark for a course
-  Future<void> _toggleBookmark(String courseId) async {
+  // Enroll the student in a course
+  Future<void> _enrollStudent(String courseId) async {
     final user = FirebaseAuth.instance.currentUser;
+
     if (user != null) {
-      final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-      List<String> currentBookmarks = List<String>.from(bookmarkedCourses);
+      try {
+        final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+        final courseRef = FirebaseFirestore.instance.collection('courses').doc(courseId);
 
-      if (currentBookmarks.contains(courseId)) {
-        currentBookmarks.remove(courseId); // Unbookmark
-      } else {
-        currentBookmarks.add(courseId); // Bookmark
+        // Add the course ID to the user's enrolled courses list
+        await userRef.update({
+          'enrolledCourses': FieldValue.arrayUnion([courseId]),
+        });
+
+        // Add the user ID to the course's enrolled students list
+        await courseRef.update({
+          'enrolledStudents': FieldValue.arrayUnion([user.uid]),
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enrollment successful!')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Enrollment failed: $e')),
+        );
       }
-
-      // Update Firestore with the new bookmark list
-      await userRef.update({
-        'bookmarkedCourses': currentBookmarks,
-      });
-
-      setState(() {
-        bookmarkedCourses = Set<String>.from(currentBookmarks); // Update local state
-      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to enroll.')),
+      );
     }
   }
 
@@ -86,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: _buildCourseList(),
+        child: _buildCourseGrid(),
       ),
     );
   }
@@ -157,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCourseList() {
+  Widget _buildCourseGrid() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('courses').snapshots(),
       builder: (context, snapshot) {
@@ -179,7 +190,13 @@ class _HomeScreenState extends State<HomeScreen> {
           return const Center(child: Text('No matching courses found.'));
         }
 
-        return ListView.builder(
+        return GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2, // Number of items per row
+            crossAxisSpacing: 4.0,
+            mainAxisSpacing: 4.0,
+            childAspectRatio: 0.75, // Adjust the aspect ratio as needed
+          ),
           itemCount: filteredCourses.length,
           itemBuilder: (context, index) {
             var course = filteredCourses[index];
@@ -199,40 +216,59 @@ class _HomeScreenState extends State<HomeScreen> {
     final courseImage = course['image'] ?? ''; // Fetch the image URL
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 5.0),
-      child: ListTile(
-        leading: courseImage.isNotEmpty
-            ? Image.network(courseImage, width: 50, height: 50, fit: BoxFit.cover) // Display image if available
-            : const Icon(Icons.book, size: 50, color: Colors.grey), // Fallback icon if no image
-        title: Text(courseTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(courseCategory, style: const TextStyle(color: Colors.grey)),
-            Text('\$${coursePrice}', style: const TextStyle(color: Colors.green)),
-          ],
-        ),
-        trailing: IconButton(
-          icon: Icon(
-            bookmarkedCourses.contains(courseId) ? Icons.bookmark : Icons.bookmark_outline,
-            color: bookmarkedCourses.contains(courseId) ? Colors.red : Colors.grey,
-          ),
-          onPressed: () => _toggleBookmark(courseId),
-        ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CourseDetailScreen(
-                courseTitle: courseTitle,
-                courseDescription: courseDescription,
-                courseImage: courseImage,
-                quizzes: const [],
-                lectures: const [],
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+      elevation: 3,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(10.0),
+                topRight: Radius.circular(10.0),
               ),
+              child: courseImage.isNotEmpty
+                  ? Image.network(
+                      courseImage,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    )
+                  : const Icon(Icons.book, size: 50, color: Colors.grey),
             ),
-          );
-        },
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  courseTitle,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  courseCategory,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12.0),
+                ),
+                Text(
+                  '\$${coursePrice}',
+                  style: const TextStyle(color: Colors.green, fontSize: 14.0),
+                ),
+                SizedBox(height: 16,),
+                Center(
+                  child: GradientButton(
+                    onPressed: () => _enrollStudent(courseId),
+                    buttonText: 'Enroll',
+                    gradientColors: [Colors.blue,Colors.blueAccent],
+                    label: 'Enroll',
+                    child: const Text('Enroll',style: TextStyle(color: Colors.white),),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

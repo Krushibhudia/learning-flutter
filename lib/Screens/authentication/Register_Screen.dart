@@ -123,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   hintText: ConstantsText.FullName,
                   icon: Icons.person,
                   keyboardType: TextInputType.name,
-                  obscureText: false,
+                  obscureText: false,isRequired: true, labelText: '',
                   maxLines: 1,
                   onSaved: (value) => _fullNameController.text = value!,
                   validator: Validation.validateFullName,
@@ -135,7 +135,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   hintText: ConstantsText.EmailID,
                   icon: Icons.email,
                   keyboardType: TextInputType.emailAddress,
-                  obscureText: false,
+                  obscureText: false,isRequired: true, labelText: '',
                   maxLines: 1,
                   onSaved: (value) => _emailController.text = value!,
                   validator: Validation.validateEmail,
@@ -148,7 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   icon: Icons.lock,
                   keyboardType: TextInputType.visiblePassword,
                   obscureText: _isPasswordObscured,
-                  maxLines: 1,
+                  maxLines: 1,isRequired: true, labelText: '',
                   onSaved: (value) => _passwordController.text = value!,
                   validator: Validation.validatePassword,
                   toggleVisibility: () {
@@ -162,7 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Confirm Password Field
                 CustomTextField(
                   hintText: ConstantsText.ConfirmPassword,
-                  icon: Icons.lock,
+                  icon: Icons.lock,isRequired: true, labelText: '',
                   keyboardType: TextInputType.visiblePassword,
                   obscureText: _isConfirmPasswordObscured,
                   maxLines: 1,
@@ -222,7 +222,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     Colors.blueAccent.shade700,
                     Colors.blue.shade500,
                     Colors.lightBlueAccent.shade200,
-                  ],
+                  ], label: '',child: Text(""), 
                 ),
 
                 const SizedBox(height: 20),

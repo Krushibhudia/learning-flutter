@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutterpro/Screens/InstructorPanel/CourseManage/CourseAnalytics.dart';
 import 'package:flutterpro/Screens/InstructorPanel/CourseManage/CreateCourse_Screen.dart';
 import 'package:flutterpro/Screens/InstructorPanel/CourseManage/ManageCourse.dart';
 import 'InstructorProfile_screen.dart';
@@ -18,9 +18,7 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
   // User's course data
   List<Map<String, dynamic>> _courses = [];
   int _totalStudents = 0;
-  double _averageRating = 0.0;
   int _totalCourses = 0;
-  String? _selectedOption;
 
   @override
   void initState() {
@@ -42,22 +40,37 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
           .collection('courses')
           .get();
 
-      // Process the courses data
-      setState(() {
-        _courses = courseSnapshot.docs
-            .map((doc) {
-          // Add the course id to the course data
-          Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
-          courseData['id'] = doc.id; // Add the document id
-          return courseData;
-        })
-            .toList();
+      List<Map<String, dynamic>> fetchedCourses = [];
 
+      for (var doc in courseSnapshot.docs) {
+        Map<String, dynamic> courseData = doc.data() as Map<String, dynamic>;
+        courseData['id'] = doc.id;
+
+        // Fetch the students subcollection for the course
+        QuerySnapshot studentsSnapshot = await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('courses')
+            .doc(doc.id)
+            .collection('enrolledCourses')
+            .get();
+
+        // Add students data to the course
+        courseData['students'] = studentsSnapshot.docs.map((studentDoc) {
+          return studentDoc.data() as Map<String, dynamic>;
+        }).toList();
+
+        fetchedCourses.add(courseData);
+      }
+
+      // Update state with the fetched data
+      setState(() {
+        _courses = fetchedCourses;
         _totalCourses = _courses.length;
-        _totalStudents = _courses.fold(0, (sum, course) => course['studentsCount'] ?? 0);
-        _averageRating = _courses.isNotEmpty
-            ? _courses.fold(0.0, (sum, course) => sum + (course['rating'] ?? 0.0)) / _courses.length
-            : 0.0;
+        // _totalStudents = _courses.fold<int>(
+        //   0, // Initial sum is 0
+        //   (sum, course) => sum + (course['enrolledCourses']?.length ?? 0), // Ensures the return type is int
+        // );
       });
     } catch (e) {
       print("Error fetching instructor data: $e");
@@ -70,71 +83,68 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
       appBar: AppBar(
         title: Text("Dashboard"),
         actions: [
-
-          IconButton(icon: Icon(Icons.account_circle), onPressed: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context)=>InstructorProfilePage()));
-          }),
-        ],
-      ),
-        drawer: Drawer(
-  child: ListView(
-    padding: EdgeInsets.zero,
-    children: [
-      DrawerHeader(
-        decoration: BoxDecoration(
-          color: Colors.blue,
-        ),
-        child: Text(
-          'Instructor Menu',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-          ),
-        ),
-      ),
-      // Course Management - ExpansionTile
-      ExpansionTile(
-        title: Text('Course Management'),
-        children: [
-          ListTile(
-            title: Text('Create Course'),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context)=>CreateCourseScreen()));
-            },
-          ),
-          ListTile(
-            title: Text('Manage Courses'),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context)=>ManageCourseScreen()));
-            },
-          ),
-          ListTile(
-            title: Text('Course Reports'),
-            onTap: () {
-              // Navigate to Course Reports screen
+          IconButton(
+            icon: Icon(Icons.account_circle),
+            onPressed: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => InstructorProfilePage()));
             },
           ),
         ],
       ),
-      ListTile(
-        title: Text('Instructor Profile'),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => InstructorProfilePage()),
-          );
-        },
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: Text(
+                'Instructor Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            
+               ListTile(
+                  title: Text('Create Course'),
+                  onTap: () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => CreateCourseScreen()));
+                  },
+                ),
+             ListTile(
+                  title: Text('Manage Courses'),
+                  onTap: () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => ManageCourseScreen()));
+                  },
+                ),
+           
+            // ListTile(
+            //   title: Text('Course Analytics'),
+            //   onTap: () {
+            //     if (_courses.isNotEmpty) {
+            //       String courseTitle = _courses[0]['title'] ?? 'Default Course Title';
+            //       Navigator.push(
+            //         context,
+            //         MaterialPageRoute(
+            //           builder: (context) => CourseAnalyticsScreen(courseTitle: courseTitle),
+            //         ),
+            //       );
+            //     } else {
+            //       print('No courses available');
+            //     }
+            //   },
+            // ),
+          ],
+        ),
       ),
-      ListTile(
-        title: Text('Settings'),
-        onTap: () {
-          // Navigate to Settings screen
-        },
-      ),
-    ],
-  ),
-),
-
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -147,58 +157,18 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
                 children: [
                   _buildSummaryCard('Courses', _totalCourses.toString(), color: Colors.red),
                   _buildSummaryCard('Students', _totalStudents.toString(), color: Colors.orange),
-                  _buildSummaryCard('Ratings', _averageRating.toStringAsFixed(1), color: Colors.indigoAccent),
                 ],
               ),
               SizedBox(height: 20),
-
-              // Graph Section for Course Completion Rate
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Course Completion Rate', style: TextStyle(fontSize: 16)),
-                    SizedBox(height: 10),
-                    Container(
-                      height: 200,
-                      child: BarChart(
-                        BarChartData(
-                          titlesData: FlTitlesData(show: false),
-                          borderData: FlBorderData(show: false),
-                          gridData: FlGridData(show: false),
-                          barGroups: [
-                            BarChartGroupData(x: 0, barRods: [
-                              BarChartRodData(toY: 75, color: Colors.blue)
-                            ]),
-                            BarChartGroupData(x: 1, barRods: [
-                              BarChartRodData(toY: 85, color: Colors.blue)
-                            ]),
-                            BarChartGroupData(x: 2, barRods: [
-                              BarChartRodData(toY: 90, color: Colors.blue)
-                            ]),
-                            BarChartGroupData(x: 3, barRods: [
-                              BarChartRodData(toY: 60, color: Colors.blue)
-                            ]),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              // Course Details Section
+              ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: _courses.length,
+                itemBuilder: (context, index) {
+                  return _buildCourseDetails(_courses[index]);
+                },
               ),
-              SizedBox(height: 20),
-
-              // Recent Activity Section
-              Text("Recent Activity", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              _buildRecentActivityTile('New student enrolled in "Flutter Basics"'),
-              _buildRecentActivityTile('Course "Advanced Python" feedback received'),
-              _buildRecentActivityTile('New review received for "React Native" course'),
             ],
           ),
         ),
@@ -206,7 +176,6 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
     );
   }
 
-  // Helper Widget to build summary cards
   Widget _buildSummaryCard(String title, String value, {Color? color}) {
     final baseColor = color ?? Colors.blueAccent;
 
@@ -216,7 +185,7 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
         borderRadius: BorderRadius.circular(15),
       ),
       child: Container(
-        width: 115, // Adjusted width for better spacing
+        width: 175,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -230,7 +199,7 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: baseColor.withOpacity(0.4), // Shadow matches the gradient
+              color: baseColor.withOpacity(0.4),
               blurRadius: 6,
               offset: const Offset(0, 4),
             ),
@@ -261,12 +230,18 @@ class _InstructorDashboardScreenState extends State<InstructorDashboardScreen> {
     );
   }
 
-  // Helper Widget to build recent activity tile
-  Widget _buildRecentActivityTile(String activity) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(activity),
-      leading: Icon(Icons.notifications, color: Colors.blue),
+  Widget _buildCourseDetails(Map<String, dynamic> course) {
+    List<dynamic> students = course['students'] ?? [];
+
+    return ExpansionTile(
+      title: Text(course['title'] ?? 'Untitled Course'),
+      subtitle: Text('${students.length} Students'),
+      children: students.map((student) {
+        return ListTile(
+          title: Text(student['name'] ?? 'Unnamed Student'),
+          subtitle: Text(student['email'] ?? 'No Email Provided'),
+        );
+      }).toList(),
     );
   }
 }

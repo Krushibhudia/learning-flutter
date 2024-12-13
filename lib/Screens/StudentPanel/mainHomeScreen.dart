@@ -16,7 +16,6 @@ class _MainhomescreenState extends State<Mainhomescreen> {
 
   final List<Widget> _pages = [
      HomeScreen(),
-    BookmarkedScreen(),
     const ProfileScreen(),
   ];
 
@@ -35,10 +34,6 @@ class _MainhomescreenState extends State<Mainhomescreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark),
-            label: 'Bookmarks',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

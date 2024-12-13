@@ -114,7 +114,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 controller: _currentPasswordController,
                 validator: (value) =>
                 value == null || value.isEmpty ? 'Enter current password' : null,
-                toggleVisibility: _toggleCurrentPasswordVisibility,
+                toggleVisibility: _toggleCurrentPasswordVisibility, isRequired: true, labelText: '',
               ),
               const SizedBox(height: 20),
 
@@ -127,7 +127,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 keyboardType: TextInputType.text,
                 controller: _passwordController,
                 validator: (value) => Validation.validatePassword(value),
-                toggleVisibility: _togglePasswordVisibility,
+                toggleVisibility: _togglePasswordVisibility, isRequired: true, labelText: '',
               ),
               const SizedBox(height: 20),
 
@@ -148,7 +148,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   }
                   return null;
                 },
-                toggleVisibility: _toggleConfirmPasswordVisibility,
+                toggleVisibility: _toggleConfirmPasswordVisibility, isRequired: true, labelText: '',
               ),
               const SizedBox(height: 30),
 
@@ -160,7 +160,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   Colors.blueAccent.shade700,
                   Colors.blue.shade500,
                   Colors.lightBlueAccent.shade200,
-                ],
+                ], label: '',child: Text(""), 
               ),
             ],
           ),

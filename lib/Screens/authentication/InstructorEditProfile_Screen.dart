@@ -1,9 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
+
 
 import '../../Custom_Widgets/CustomTextField.dart';
 import '../../Custom_Widgets/GradientButton.dart';
+import 'package:image_picker/image_picker.dart';
 
 class InstructorEditProfileScreen extends StatefulWidget {
   @override
@@ -22,7 +26,8 @@ class _InstructorEditProfileScreenState
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool isLoading = true;
-
+ String? _profileImageUrl;
+  File? _profileImageFile;
   @override
   void initState() {
     super.initState();
@@ -43,6 +48,8 @@ class _InstructorEditProfileScreenState
             emailController.text = data['email'] ?? '';
             aboutController.text = data['about'] ?? '';
             expertiseController.text = data['expertise'] ?? '';
+                        _profileImageUrl = data['profileImageUrl'];
+
             isLoading = false;
           });
         }
@@ -55,6 +62,26 @@ class _InstructorEditProfileScreenState
     }
   }
 
+  Future<void> _pickProfileImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _profileImageFile = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<String?> _uploadProfileImage(File image) async {
+    try {
+      String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      Reference ref = FirebaseStorage.instance.ref().child('profile_images/$fileName');
+      await ref.putFile(image);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Image upload failed: $e')));
+      return null;
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,21 +110,20 @@ class _InstructorEditProfileScreenState
               child: Stack(
                 alignment: Alignment.bottomRight,
                 children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundImage: NetworkImage(
-                      'https://via.placeholder.com/150', // Replace with profile image URL
-                    ),
-                  ),
+                 CircleAvatar(
+        radius: 60,
+        backgroundImage: _profileImageUrl != null
+            ? NetworkImage(_profileImageUrl!) // Use the profile image URL from Firestore
+            : AssetImage('assets/images/default_profile.png') as ImageProvider, // Use a local default image if no URL is available
+      ),
                   IconButton(
                     icon: Icon(
                       Icons.camera_alt,
                       color: Colors.blueAccent,
                       size: 28,
                     ),
-                    onPressed: () {
-                      // Handle profile picture upload logic here
-                    },
+                    onPressed: () async{
+await _pickProfileImage();                    },
                   ),
                 ],
               ),
@@ -109,7 +135,7 @@ class _InstructorEditProfileScreenState
               enabled: false,
               keyboardType: TextInputType.emailAddress,
               obscureText: false,
-              controller: emailController,
+              controller: emailController, isRequired: true, labelText: '',
             ),
             const SizedBox(height: 16),
 
@@ -119,7 +145,7 @@ class _InstructorEditProfileScreenState
               icon: Icons.person,
               keyboardType: TextInputType.name,
               obscureText: false,
-              controller: nameController,
+              controller: nameController,isRequired: true, labelText: '',
             ),
 
             // Email Text Field
@@ -132,7 +158,7 @@ class _InstructorEditProfileScreenState
               icon: Icons.school,
               keyboardType: TextInputType.text,
               obscureText: false,
-              controller: expertiseController,
+              controller: expertiseController,isRequired: true, labelText: '',
             ),
             const SizedBox(height: 16),
 
@@ -142,7 +168,7 @@ class _InstructorEditProfileScreenState
               icon: Icons.info_outline,
               keyboardType: TextInputType.multiline,
               obscureText: false,
-              controller: aboutController,
+              controller: aboutController,isRequired: true, labelText: '',
               maxLines: 4,
             ),
             const SizedBox(height: 30),
@@ -155,7 +181,7 @@ class _InstructorEditProfileScreenState
                 await _updateUserData();
                 Navigator.pop(context);
               },
-              gradientColors: [Colors.blue, Colors.blueAccent],
+              gradientColors: [Colors.blue, Colors.blueAccent], label: '',child: Text(""), 
             ),
           ],
         ),
@@ -167,11 +193,17 @@ class _InstructorEditProfileScreenState
     try {
       String? uid = _auth.currentUser?.uid;
       if (uid != null) {
+         String? profileImageUrl = _profileImageUrl;
+        if (_profileImageFile != null) {
+          profileImageUrl = await _uploadProfileImage(_profileImageFile!);
+        }
         await _firestore.collection('users').doc(uid).update({
           'fullName': nameController.text.trim(),
           'email': emailController.text.trim(),
           'about': aboutController.text.trim(),
           'expertise': expertiseController.text.trim(),
+                    'profileImageUrl': profileImageUrl ?? _profileImageUrl,
+
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Profile updated successfully!')),

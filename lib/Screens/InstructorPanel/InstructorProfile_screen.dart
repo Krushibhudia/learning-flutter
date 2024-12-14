@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutterpro/Screens/authentication/InstructorEditProfile_Screen.dart';
 import 'package:flutterpro/Screens/authentication/Login_Screen.dart';
 import '../../Custom_Widgets/GradientButton.dart';
-import 'Earning&Payment_Screen.dart';
 
 class InstructorProfilePage extends StatefulWidget {
   @override

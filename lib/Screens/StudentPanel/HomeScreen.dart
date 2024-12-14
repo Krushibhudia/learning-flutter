@@ -233,10 +233,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     courseCategory,
                     style: const TextStyle(color: Colors.grey, fontSize: 12.0),
                   ),
-                  Text(
-                    '\$${coursePrice}',
-                    style: const TextStyle(color: Colors.green, fontSize: 14.0),
-                  ),
+                  // Text(
+                  //   '\$${coursePrice}',
+                  //   style: const TextStyle(color: Colors.green, fontSize: 14.0),
+                  // ),
                 ],
               ),
             ),

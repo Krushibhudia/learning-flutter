@@ -1,73 +1,185 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
-class CertificateScreen extends StatelessWidget {
-  final int score;
+class CertificatePage extends StatefulWidget {
+  final String courseId;
 
-  const CertificateScreen({Key? key, required this.score}) : super(key: key);
+  const CertificatePage({Key? key, required this.courseId}) : super(key: key);
+
+  @override
+  _CertificatePageState createState() => _CertificatePageState();
+}
+
+class _CertificatePageState extends State<CertificatePage> {
+  String userName = "";
+  String courseName = "";
+  bool isLoading = true;  // Track loading state
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDetails();  // Fetch both user and course details together
+  }
+
+  // Fetch both user and course details
+  Future<void> _fetchDetails() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print('User is not logged in');
+        setState(() {
+          isLoading = false;
+        });
+        return;  // If the user is not logged in, stop fetching
+      }
+
+      // Run both fetch calls concurrently using Future.wait
+      await Future.wait([
+        _fetchUserDetails(user.uid),  // Fetch user details
+        _fetchCourseDetails(),  // Fetch course details
+      ]);
+    } catch (e) {
+      print('Error fetching details: $e');  // Print error if something goes wrong
+    } finally {
+      setState(() {
+        isLoading = false;  // Set loading to false once data is fetched
+      });
+    }
+  }
+
+  // Fetch user details (name)
+  Future<void> _fetchUserDetails(String userId) async {
+    try {
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      if (snapshot.exists) {
+        setState(() {
+          userName = snapshot['name'] ?? "User";  // Set the fetched name
+        });
+      } else {
+        print('User data not found');
+      }
+    } catch (e) {
+      print('Error fetching user details: $e');
+    }
+  }
+
+  // Fetch course details (name)
+  Future<void> _fetchCourseDetails() async {
+    try {
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance
+          .collection('courses')
+          .doc(widget.courseId)
+          .get();
+      if (snapshot.exists) {
+        setState(() {
+          courseName = snapshot['name'] ?? "Course Name";  // Set the fetched course name
+        });
+      } else {
+        print('Course data not found');
+      }
+    } catch (e) {
+      print('Error fetching course details: $e');
+    }
+  }
+
+  // Function to generate the PDF certificate
+  Future<void> _generateCertificate() async {
+    final pdf = pw.Document();
+
+    // Add certificate content
+    pdf.addPage(
+      pw.Page(
+        build: (pw.Context context) {
+          return pw.Center(
+            child: pw.Column(
+              mainAxisAlignment: pw.MainAxisAlignment.center,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.Text(
+                  'Certificate of Completion',
+                  style: pw.TextStyle(fontSize: 32, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 20),
+                pw.Text(
+                  'This is to certify that',
+                  style: pw.TextStyle(fontSize: 24),
+                ),
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  userName,
+                  style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 20),
+                pw.Text(
+                  'has successfully completed the course',
+                  style: pw.TextStyle(fontSize: 24),
+                ),
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  courseName,
+                  style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 50),
+                pw.Text(
+                  'Date: ${DateTime.now().toLocal()}',
+                  style: pw.TextStyle(fontSize: 18),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+
+    // Trigger the PDF download
+    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Your Certificate'),
-        backgroundColor:
-        Colors.blueAccent, // Consistent color with previous screens
+        title: Text('Generate Certificate'),
+        backgroundColor: Colors.blueAccent,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                score > 20
-                    ? 'Congratulations!'
-                    : 'Oops, better luck next time!',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent, // Matching color with other screens
-                ),
+        child: isLoading
+            ? Center(child: CircularProgressIndicator())  // Show loading until data is fetched
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (userName.isNotEmpty && courseName.isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'User Name: $userName',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          'Course Name: $courseName',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: _generateCertificate,
+                          child: Text('Generate Certificate'),
+                        ),
+                      ],
+                    ),
+                  if (userName.isEmpty || courseName.isEmpty)
+                    Center(child: Text('Failed to load user/course details')),
+                ],
               ),
-              SizedBox(height: 20),
-              Text(
-                'You scored $score out of 30!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[800],
-                ),
-              ),
-              SizedBox(height: 40),
-              ElevatedButton(
-                onPressed: score > 20
-                    ? () {
-                  // Logic to download or show certificate
-                }
-                    : null, // Disable button if score is <= 20
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                  Colors.blueAccent, // Same as app bar and other buttons
-                  padding:
-                  EdgeInsets.symmetric(vertical: 15.0, horizontal: 30.0),
-                  textStyle:
-                  TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                        15.0), // Rounded corners for modern look
-                  ),
-                  elevation: 5, // Button shadow for depth
-                ),
-                child: Text(
-                  'Download Certificate',
-                  style: TextStyle(
-                      color: Colors.white), // White text on blue button
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutterpro/Custom_Widgets/CustomTextField.dart'; // Import CustomTextField
 import 'package:flutterpro/Custom_Widgets/GradientButton.dart'; // Import GradientButton
+import 'package:image_picker/image_picker.dart'; // Import image_picker
+import 'dart:io'; // For using File
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -20,6 +23,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _bioController = TextEditingController();
 
   bool _isLoading = false;
+  File? _profileImage; // Variable to store the selected image
+  String? _profileImageUrl; // URL of the uploaded image in Firebase Storage
+
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -45,6 +52,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _emailController.text = data['email'] ?? '';
           _phoneController.text = data['phone'] ?? '';
           _bioController.text = data['bio'] ?? '';
+          _profileImageUrl = data['profileImageUrl']; // Fetch the profile image URL from Firestore
         }
       }
     } catch (e) {
@@ -64,6 +72,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       try {
         User? currentUser = FirebaseAuth.instance.currentUser;
         if (currentUser != null) {
+          // If a new image is selected, upload it to Firebase Storage
+          if (_profileImage != null) {
+            String fileName = '${currentUser.uid}_profile.jpg';
+            UploadTask uploadTask = FirebaseStorage.instance
+                .ref('profile_images/$fileName')
+                .putFile(_profileImage!);
+
+            TaskSnapshot taskSnapshot = await uploadTask;
+            _profileImageUrl = await taskSnapshot.ref.getDownloadURL(); // Get the URL of the uploaded image
+          }
+
+          // Save user data to Firestore
           await FirebaseFirestore.instance
               .collection('users')
               .doc(currentUser.uid)
@@ -72,6 +92,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             'email': _emailController.text,
             'phone': _phoneController.text,
             'bio': _bioController.text,
+            'profileImageUrl': _profileImageUrl, // Save the image URL
           }, SetOptions(merge: true));
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -87,6 +108,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       } finally {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  // Function to pick an image from the gallery
+  Future<void> _pickImage() async {
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path); // Set the picked image
+      });
     }
   }
 
@@ -107,10 +139,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
+                    // Profile Image Section
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey[200],
+                        backgroundImage: _profileImage != null
+                            ? FileImage(_profileImage!)
+                            : (_profileImageUrl != null
+                                ? NetworkImage(_profileImageUrl!) as ImageProvider
+                                : const AssetImage('assets/default_profile.png')),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
                     CustomTextField(
-                      hintText: 'Full Name',obscureText: false,
+                      hintText: 'Full Name',
+                      obscureText: false,
                       icon: Icons.person,
-                      controller: _fullNameController, keyboardType: TextInputType.text, isRequired: true, labelText: '',
+                      controller: _fullNameController,
+                      keyboardType: TextInputType.text,
+                      isRequired: true,
+                      labelText: '',
                     ),
                     const SizedBox(height: 15),
                     CustomTextField(
@@ -118,20 +168,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       icon: Icons.email,
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      enabled: false, obscureText: false, isRequired: true, labelText: '', // Prevent editing the email
+                      enabled: false,
+                      obscureText: false,
+                      isRequired: true,
+                      labelText: '', // Prevent editing the email
                     ),
                     const SizedBox(height: 15),
                     CustomTextField(
-                      hintText: 'Phone',obscureText: false,
+                      hintText: 'Phone',
+                      obscureText: false,
                       icon: Icons.phone,
                       controller: _phoneController,
-                      keyboardType: TextInputType.phone, isRequired: true, labelText: '',
+                      keyboardType: TextInputType.phone,
+                      isRequired: true,
+                      labelText: '',
                     ),
                     const SizedBox(height: 15),
                     CustomTextField(
                       hintText: 'Bio',
-                      icon: Icons.info_outline,obscureText: false,
-                      controller: _bioController, keyboardType: TextInputType.text, isRequired: true, labelText: '',
+                      icon: Icons.info_outline,
+                      obscureText: false,
+                      controller: _bioController,
+                      keyboardType: TextInputType.text,
+                      isRequired: true,
+                      labelText: '',
                     ),
                     const SizedBox(height: 30),
                     GradientButton(
@@ -140,7 +200,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       gradientColors: [
                         Colors.blueAccent,
                         Colors.lightBlue,
-                      ], label: '',child: Text(""), 
+                      ],
+                      label: '',
+                      child: const Text(""),
                     ),
                   ],
                 ),
